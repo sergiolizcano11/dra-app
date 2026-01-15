@@ -92,13 +92,20 @@ FASES = {
     }
 }
 
-# --- 3. ESTADO DE SESIÓN ---
+# --- 3. ESTADO DE SESIÓN (ROBUSTO / AUTO-REPARABLE) ---
 if 'user' not in st.session_state:
-    st.session_state.user = {
-        'view': 'Home',
-        'fase_actual': 'Éveil',
-        'historial': []
-    }
+    st.session_state.user = {}
+
+# Verificamos clave por clave. Si falta alguna (porque vienes de una versión vieja), la crea.
+defaults = {
+    'view': 'Home',
+    'fase_actual': 'Éveil',
+    'historial': []
+}
+
+for key, value in defaults.items():
+    if key not in st.session_state.user:
+        st.session_state.user[key] = value
 
 # --- 4. VISTAS DE LA APP ---
 
