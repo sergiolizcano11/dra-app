@@ -3,16 +3,18 @@ import random
 import time
 from datetime import datetime
 
-# --- 1. CONFIGURACIÓN Y "HACK" PARA MENÚ ABAJO ---
-st.set_page_config(page_title="Mon Dragon Français", layout="mobile", page_icon="🐉")
+# --- 1. CONFIGURACIÓN CORREGIDA ---
+# CAMBIO: layout="centered" es lo correcto. El CSS se encarga del resto.
+st.set_page_config(page_title="Mon Dragon Français", layout="centered", page_icon="🐉")
 
 # CSS PRO PARA TRANSFORMAR STREAMLIT EN APP MÓVIL
 st.markdown("""
     <style>
-    /* Ajuste del cuerpo principal para que no se oculte tras el menú */
+    /* Ajuste del cuerpo principal */
     .block-container {
         padding-bottom: 100px; /* Espacio para el menú inferior */
         padding-top: 20px;
+        max-width: 500px; /* Forzar anchura tipo móvil incluso en PC */
     }
     
     /* MENÚ FIJO ABAJO (Navigation Bar) */
@@ -34,7 +36,7 @@ st.markdown("""
     div[data-testid="stRadio"] label {
         background-color: transparent !important;
         border: none;
-        font-size: 24px; /* Iconos grandes */
+        font-size: 24px;
         cursor: pointer;
         transition: transform 0.2s;
     }
@@ -62,7 +64,7 @@ st.markdown("""
         margin-bottom: 5px;
     }
     
-    /* Ocultar elementos nativos molestos */
+    /* Ocultar elementos nativos */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .stDeployButton {display:none;}
@@ -134,15 +136,14 @@ if not st.session_state.db['setup_complete']:
 
 # --- 6. APLICACIÓN PRINCIPAL ---
 else:
-    # --- MENÚ DE NAVEGACIÓN INFERIOR (TRUCO ST.RADIO) ---
-    # Usamos iconos como etiquetas para simular la barra de app
+    # --- MENÚ DE NAVEGACIÓN INFERIOR ---
     menu_options = ["🏠 Accueil", "⚔️ Quiz", "📊 Stats"]
     selection = st.radio(
         "", 
         menu_options, 
         horizontal=True, 
         label_visibility="collapsed",
-        key="nav_menu" # Clave única
+        key="nav_menu"
     )
 
     # --- VISTA: HOME (ACCUEIL) ---
@@ -199,7 +200,7 @@ else:
                     meta = calcular_nivel(st.session_state.db['xp'], st.session_state.db['nivel'])
                     if st.session_state.db['xp'] >= meta:
                         st.session_state.db['nivel'] += 1
-                        st.session_state.db['xp'] = 0 # O resetear o mantener sobrante
+                        st.session_state.db['xp'] = 0 
                         st.toast("¡Has subido de nivel!", icon="🆙")
                     
                     time.sleep(1.5)
