@@ -2,212 +2,222 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-# --- 1. CONFIGURACIÓN INICIAL ---
-st.set_page_config(page_title="App Dragonne", layout="centered", page_icon="🐉")
+# --- 1. CONFIGURACIÓN E IMITACIÓN DE "MUSA" UI ---
+st.set_page_config(page_title="Mon Cycle Français", layout="centered", page_icon="🐉")
 
-# --- 2. ESTILOS CSS "MOBILE APP" (iOS/Android Look) ---
 st.markdown("""
     <style>
-    /* RESET Y FONDO APP */
+    /* ESTÉTICA SOFT/CLEAN TIPO MUSA */
     .stApp {
-        background-color: #F2F4F8; /* Gris azulado muy suave tipo iOS */
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background-color: #FAFAFA; /* Blanco roto muy limpio */
     }
     
-    /* MENÚ DE NAVEGACIÓN INFERIOR (FIXED BOTTOM BAR) */
-    .nav-container {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        background-color: white;
-        z-index: 999;
-        border-top: 1px solid #E5E5EA;
-        padding: 10px 0;
-        box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+    /* EL CÍRCULO CENTRAL (Símbolo del ciclo) */
+    .cycle-ring {
+        width: 200px;
+        height: 200px;
+        border-radius: 50%;
+        margin: 0 auto;
         display: flex;
-        justify-content: space-around;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        border: 8px solid white;
+        background: white;
+        position: relative;
     }
     
-    /* Ajuste para que el contenido no quede tapado por el menú */
-    .block-container {
-        padding-bottom: 100px;
-        max-width: 600px; /* Ancho máximo tipo móvil */
-    }
-
-    /* TARJETAS (CARDS) */
-    .app-card {
-        background-color: white;
-        border-radius: 20px;
-        padding: 20px;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        border: 1px solid #F0F0F0;
-    }
-
-    /* CABECERAS Y TEXTO */
-    h1, h2, h3 { color: #1C1C1E; }
-    p, label { color: #3A3A3C; }
+    /* TEXTOS */
+    h1, h2, h3 { color: #4A4A4A; font-family: 'Helvetica', sans-serif; font-weight: 300; }
+    .subtitle { color: #9B9B9B; font-size: 0.9em; text-align: center; }
     
-    /* BOTONES ESTILO APP */
-    .stButton>button {
-        width: 100%;
-        border-radius: 12px;
-        height: 50px;
-        font-weight: 600;
-        background-color: #007AFF; /* Azul iOS */
-        color: white;
+    /* BOTONES DE SÍNTOMAS (Tags redondeados) */
+    div[data-baseweb="select"] > div {
+        border-radius: 20px !important;
+        background-color: #F0F2F6;
         border: none;
     }
-    .stButton>button:hover { background-color: #0062CC; color: white; }
-
-    /* OCULTAR ELEMENTOS NATIVOS */
+    
+    /* MENÚ INFERIOR FLOTANTE */
+    .nav-bar {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: white;
+        padding: 10px 30px;
+        border-radius: 50px;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        display: flex;
+        gap: 40px;
+        z-index: 999;
+    }
+    
+    /* OCULTAR COSAS DEFAULT */
     #MainMenu, footer, header {visibility: hidden;}
+    .stDeployButton {display:none;}
     </style>
 """, unsafe_allow_html=True)
 
-# --- 3. ESTADO Y DATOS (Imágenes de Dragones) ---
-if 'user' not in st.session_state:
-    st.session_state.user = {
-        'current_phase': 'Éveil', 
-        'journal': [],
-        'view': 'Inicio' # Controla qué pantalla vemos
-    }
+# --- 2. BASE DE CONOCIMIENTO (SÍNTOMAS Y FASES) ---
+# Aquí conectamos "Cómo me siento" con "En qué fase estoy"
+SENSACIONES = {
+    "Curieux 🧐": "Éveil",
+    "Motivé 🚀": "Éveil",
+    "Bavard 🗣️": "Expansion",
+    "Créatif 🎨": "Expansion",
+    "Confiant 😎": "Expansion",
+    "Fatigué 😴": "Repli",
+    "Perdu 🌫️": "Repli",
+    "Bloqué 🧱": "Repli",
+    "Calme 🧘": "Renouveau",
+    "Satisfait ✅": "Renouveau"
+}
 
-# URLs de Dragones para cada fase
-DRAGONS = {
+FASES_DATA = {
     "Éveil": {
-        "img": "https://cdn-icons-png.flaticon.com/512/3232/3232717.png", # Huevo rompiéndose
-        "color": "#34C759", # Verde iOS
-        "title": "Phase 1: Éveil",
-        "desc": "Tu observas. La curiosidad es tu guía."
+        "color": "linear-gradient(135deg, #a8e6cf 0%, #dcedc1 100%)", # Verdes suaves
+        "consejo": "Hoy es buen día para escuchar y absorber vocabulario nuevo.",
+        "img": "https://cdn-icons-png.flaticon.com/512/3232/3232717.png"
     },
     "Expansion": {
-        "img": "https://cdn-icons-png.flaticon.com/512/1625/1625348.png", # Dragón volando rojo
-        "color": "#FF3B30", # Rojo iOS
-        "title": "Phase 2: Expansion",
-        "desc": "Tu actúas. Te atreves a hablar y crear."
+        "color": "linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)", # Rosas enérgicos
+        "consejo": "¡Tienes la energía alta! Atrévete a participar en clase.",
+        "img": "https://cdn-icons-png.flaticon.com/512/1625/1625348.png"
     },
     "Repli": {
-        "img": "https://cdn-icons-png.flaticon.com/512/7880/7880222.png", # Dragón azul durmiendo
-        "color": "#5856D6", # Violeta iOS
-        "title": "Phase 3: Repli",
-        "desc": "Descanso necesario. Momento de reflexionar."
+        "color": "linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)", # Violetas calmados
+        "consejo": "No te fuerces. Revisa tus apuntes tranquilamente.",
+        "img": "https://cdn-icons-png.flaticon.com/512/7880/7880222.png"
     },
     "Renouveau": {
-        "img": "https://cdn-icons-png.flaticon.com/512/3715/3715097.png", # Dragón dorado/majestuoso
-        "color": "#FF9500", # Naranja iOS
-        "title": "Phase 4: Renouveau",
-        "desc": "Has integrado lo aprendido. Brillas con luz propia."
+        "color": "linear-gradient(135deg, #f6d365 0%, #fda085 100%)", # Naranjas cálidos
+        "consejo": "Organiza lo aprendido. Estás integrando el conocimiento.",
+        "img": "https://cdn-icons-png.flaticon.com/512/3715/3715097.png"
     }
 }
 
-# --- 4. FUNCIÓN DE MENÚ PERSONALIZADO ---
-def mostrar_menu_inferior():
-    # Usamos columnas para simular botones de app
-    st.write("---") # Separador invisible al final
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        if st.button("🏠 Inicio"):
-            st.session_state.user['view'] = 'Inicio'
-            st.rerun()
-    with col2:
-        if st.button("📝 Diario"):
-            st.session_state.user['view'] = 'Diario'
-            st.rerun()
-    with col3:
-        if st.button("📜 Historial"):
-            st.session_state.user['view'] = 'Historial'
-            st.rerun()
+# --- 3. ESTADO DEL USUARIO ---
+if 'user' not in st.session_state:
+    st.session_state.user = {
+        'fase_actual': 'Éveil',
+        'diario': [],
+        'view': 'Ciclo'
+    }
 
-# --- 5. VISTAS DE LA APLICACIÓN ---
+# --- 4. INTERFAZ PRINCIPAL ---
 
-# A. VISTA INICIO (EL DRAGÓN)
-if st.session_state.user['view'] == 'Inicio':
-    st.title("Ma Dragonne 🐉")
+# A. PANTALLA DEL CICLO (HOME)
+if st.session_state.user['view'] == 'Ciclo':
+    fase = st.session_state.user['fase_actual']
+    data = FASES_DATA[fase]
     
-    # Selector de Fase (Tipo Dropdown App)
-    phase_keys = list(DRAGONS.keys())
-    current_index = phase_keys.index(st.session_state.user['current_phase'])
+    # 1. Cabecera limpia
+    st.markdown(f"<h3 style='text-align: center;'>Bonjour, Éleve</h3>", unsafe_allow_html=True)
+    st.markdown(f"<p class='subtitle'>Tu es en phase <strong>{fase}</strong></p>", unsafe_allow_html=True)
     
-    st.caption("¿Cómo te sientes esta semana?")
-    nueva_fase = st.selectbox("Selecciona tu fase:", phase_keys, index=current_index)
-    
-    if nueva_fase != st.session_state.user['current_phase']:
-        st.session_state.user['current_phase'] = nueva_fase
-        st.rerun()
-
-    # DATOS DE LA FASE ACTUAL
-    data = DRAGONS[st.session_state.user['current_phase']]
-    
-    # TARJETA DEL DRAGÓN (La parte visual potente)
+    # 2. El Círculo Visual (La "Rueda" de MUSA)
     st.markdown(f"""
-    <div class="app-card" style="text-align: center; border-top: 5px solid {data['color']};">
-        <h2 style="color: {data['color']}; margin-top:0;">{data['title']}</h2>
-        <p style="font-size: 1.1em; color: gray;">{data['desc']}</p>
-        <img src="{data['img']}" width="200" style="margin: 20px 0;">
-    </div>
+        <div class="cycle-ring" style="background: {data['color']};">
+            <img src="{data['img']}" width="120">
+        </div>
     """, unsafe_allow_html=True)
     
-    st.info("💡 Consejo: Si cambias la fase arriba, la imagen de tu dragona evolucionará contigo.")
-
-# B. VISTA DIARIO (REGISTRO)
-elif st.session_state.user['view'] == 'Diario':
-    st.title("Nouveau Bilan 📝")
+    # 3. El Consejo del Día (Tipo "Health Tip")
+    st.write("")
+    st.info(f"💡 **Conseil du jour:** {data['consejo']}")
     
-    st.markdown('<div class="app-card">', unsafe_allow_html=True)
-    with st.form("entry_form"):
-        st.subheader("1. Tu logro semanal")
-        tipo = st.radio("¿Qué has trabajado?", ["🧠 Compréhension", "💬 Expression", "🌱 Effort"], horizontal=True)
-        texto = st.text_area("Completa: 'Aujourd'hui j'ai...'", height=80)
+    # 4. Botón de Acción Principal (El "+" de MUSA)
+    st.write("")
+    st.markdown("<p style='text-align: center; color: gray;'>¿Cómo sientes tu francés hoy?</p>", unsafe_allow_html=True)
+    
+    if st.button("Registrar mis sensaciones hoy (+)", type="primary"):
+        st.session_state.user['view'] = 'Registro'
+        st.rerun()
+
+# B. PANTALLA DE REGISTRO (CHECK-IN)
+elif st.session_state.user['view'] == 'Registro':
+    st.markdown("<h2 style='text-align: center;'>Check-in Diario</h2>", unsafe_allow_html=True)
+    
+    # Formulario "Symptom Tracking"
+    with st.container(border=True):
+        st.write("Selecciona tus sensaciones de aprendizaje:")
         
-        st.write("---")
-        st.subheader("2. (Opcional) Dificultad")
-        dificultad = st.text_input("Me costó trabajo...")
+        # Tags seleccionables
+        sensaciones_seleccionadas = st.multiselect(
+            "¿Qué sientes hoy?",
+            list(SENSACIONES.keys()),
+            placeholder="Selecciona palabras clave..."
+        )
         
-        submitted = st.form_submit_button("Guardar en mi Diario")
-        if submitted:
-            if texto:
-                nuevo_registro = {
+        nota = st.text_area("Nota personal (Opcional):", height=80)
+        
+        if st.button("Guardar Registro"):
+            if sensaciones_seleccionadas:
+                # ALGORITMO: Determinamos la fase según la mayoría de sensaciones
+                conteo_fases = {}
+                for s in sensaciones_seleccionadas:
+                    f_sugerida = SENSACIONES[s]
+                    conteo_fases[f_sugerida] = conteo_fases.get(f_sugerida, 0) + 1
+                
+                # La fase con más votos gana (si hay empate, se queda la primera)
+                nueva_fase = max(conteo_fases, key=conteo_fases.get)
+                st.session_state.user['fase_actual'] = nueva_fase
+                
+                # Guardar en historial
+                entry = {
                     "fecha": datetime.now().strftime("%d/%m"),
-                    "fase": st.session_state.user['current_phase'],
-                    "tipo": tipo,
-                    "texto": texto,
-                    "dificultad": dificultad
+                    "sensaciones": ", ".join(sensaciones_seleccionadas),
+                    "fase": nueva_fase,
+                    "nota": nota
                 }
-                st.session_state.user['journal'].insert(0, nuevo_registro)
-                st.success("¡Guardado!")
-                st.balloons()
+                st.session_state.user['diario'].insert(0, entry)
+                
+                st.success(f"Ciclo actualizado: Ahora estás en {nueva_fase}")
+                time.sleep(1.5)
+                st.session_state.user['view'] = 'Ciclo'
+                st.rerun()
             else:
-                st.error("Escribe tu logro primero.")
-    st.markdown('</div>', unsafe_allow_html=True)
-
-# C. VISTA HISTORIAL (FEED)
-elif st.session_state.user['view'] == 'Historial':
-    st.title("Mes Traces 📜")
-    
-    if not st.session_state.user['journal']:
-        st.markdown('<div class="app-card" style="text-align:center;">📭 Tu diario está vacío aún.</div>', unsafe_allow_html=True)
-    
-    for entry in st.session_state.user['journal']:
-        color_borde = DRAGONS[entry['fase']]['color']
-        img_mini = DRAGONS[entry['fase']]['img']
+                st.warning("Selecciona al menos una sensación.")
         
+        if st.button("Cancelar", type="secondary"):
+            st.session_state.user['view'] = 'Ciclo'
+            st.rerun()
+
+# C. PANTALLA CALENDARIO/HISTORIAL
+elif st.session_state.user['view'] == 'Historial':
+    st.markdown("<h2 style='text-align: center;'>Mi Calendario</h2>", unsafe_allow_html=True)
+    
+    for item in st.session_state.user['diario']:
+        color_borde = FASES_DATA[item['fase']]['color']
         st.markdown(f"""
-        <div class="app-card" style="border-left: 5px solid {color_borde}; display: flex; align-items: center; gap: 15px;">
-            <div style="text-align: center;">
-                <img src="{img_mini}" width="40" style="border-radius: 50%;">
-                <br><small>{entry['fecha']}</small>
-            </div>
-            <div>
-                <h4 style="margin:0; color: {color_borde};">{entry['tipo']}</h4>
-                <p style="margin: 5px 0 0 0;">"{entry['texto']}"</p>
-                {f'<p style="color:red; font-size:0.8em; margin-top:5px;">☁️ {entry["dificultad"]}</p>' if entry['dificultad'] else ''}
-            </div>
+        <div style="background: white; padding: 15px; border-radius: 15px; margin-bottom: 10px; border-left: 5px solid gray; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+            <small>{item['fecha']} | <strong>{item['fase']}</strong></small><br>
+            <span style="font-size: 1.1em;">{item['sensaciones']}</span>
+            <p style="color: gray; font-size: 0.9em; margin-top: 5px;"><em>{item['nota']}</em></p>
         </div>
         """, unsafe_allow_html=True)
 
-# --- 6. RENDERIZAR MENÚ AL FINAL ---
-# Esto hace que aparezca visualmente abajo gracias a CSS, pero lógica se ejecuta aquí.
-mostrar_menu_inferior()
+# --- 5. MENÚ DE NAVEGACIÓN FLOTANTE (ESTILO APP NATIVA) ---
+import time
+
+col1, col2, col3 = st.columns(3)
+# Usamos un contenedor fijo con CSS, pero necesitamos botones de Streamlit para la lógica
+# Truco: Ponemos los botones al final de la página normal, pero el CSS 'nav-bar' visualmente no funciona con botones directos de streamlit fácilmente sin componentes extra.
+# Usaremos columnas normales de Streamlit abajo del todo para simular el dock.
+
+st.write("---")
+c1, c2, c3 = st.columns([1,1,1])
+
+with c1:
+    if st.button("⭕ Ciclo"):
+        st.session_state.user['view'] = 'Ciclo'
+        st.rerun()
+with c2:
+    if st.button("➕ Registro"):
+        st.session_state.user['view'] = 'Registro'
+        st.rerun()
+with c3:
+    if st.button("📅 Historial"):
+        st.session_state.user['view'] = 'Historial'
+        st.rerun()
