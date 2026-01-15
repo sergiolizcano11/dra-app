@@ -1,229 +1,247 @@
 import streamlit as st
-import random
-import time
+import pandas as pd
 from datetime import datetime
 
-# --- 1. CONFIGURACIÓN CORREGIDA ---
-# CAMBIO: layout="centered" es lo correcto. El CSS se encarga del resto.
-st.set_page_config(page_title="Mon Dragon Français", layout="centered", page_icon="🐉")
+# --- 1. CONFIGURACIÓN DE PÁGINA ---
+st.set_page_config(page_title="La Dragonne - Journal d'Apprentissage", layout="centered", page_icon="🐉")
 
-# CSS PRO PARA TRANSFORMAR STREAMLIT EN APP MÓVIL
+# --- 2. ESTILOS CSS (Visualización Calmada y No Competitiva) ---
 st.markdown("""
     <style>
-    /* Ajuste del cuerpo principal */
-    .block-container {
-        padding-bottom: 100px; /* Espacio para el menú inferior */
-        padding-top: 20px;
-        max-width: 500px; /* Forzar anchura tipo móvil incluso en PC */
+    /* Fondo que cambia sutilmente */
+    .stApp {
+        background: linear-gradient(180deg, #fdfbfb 0%, #ebedee 100%);
     }
     
-    /* MENÚ FIJO ABAJO (Navigation Bar) */
-    div[data-testid="stRadio"] > div {
-        display: flex;
-        justify-content: space-around;
-        width: 100%;
+    /* Tarjetas de reflexión */
+    .journal-card {
         background-color: white;
-        padding: 15px 0;
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        z-index: 9999;
-        box-shadow: 0px -5px 15px rgba(0,0,0,0.1);
-        border-top: 1px solid #eee;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        margin-bottom: 20px;
+        border-left: 5px solid #6C63FF;
     }
     
-    /* Estilo de los botones del menú */
-    div[data-testid="stRadio"] label {
-        background-color: transparent !important;
-        border: none;
-        font-size: 24px;
-        cursor: pointer;
-        transition: transform 0.2s;
-    }
-    div[data-testid="stRadio"] label:hover {
-        transform: scale(1.2);
-        color: #6C63FF;
-    }
-    
-    /* TARJETAS (Cards) */
-    .dragon-card {
-        background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
+    /* Estilos para las Fases */
+    .phase-badge {
+        padding: 10px 20px;
         border-radius: 20px;
-        padding: 20px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        margin-bottom: 15px;
-        border: 1px solid #e1e4e8;
-        text-align: center;
-    }
-    
-    /* BARRA DE PROGRESO PERSONALIZADA */
-    .xp-text {
         font-weight: bold;
-        color: #555;
-        font-size: 0.9em;
-        margin-bottom: 5px;
+        text-align: center;
+        margin-bottom: 15px;
+        color: white;
     }
     
-    /* Ocultar elementos nativos */
+    /* Ocultar elementos de Streamlit */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    .stDeployButton {display:none;}
+    
+    /* Botones suaves */
+    .stButton>button {
+        border-radius: 20px;
+        background-color: #f0f2f6;
+        color: #31333F;
+        border: 1px solid #d0d2d6;
+    }
+    .stButton>button:hover {
+        border-color: #6C63FF;
+        color: #6C63FF;
+    }
     </style>
 """, unsafe_allow_html=True)
 
-# --- 2. GESTIÓN DE ESTADO ---
-if 'db' not in st.session_state:
-    st.session_state.db = {
-        'setup_complete': False,
-        'nombre_dragon': "",
-        'elemento': "", # feu, eau, nature
-        'xp': 0,
-        'nivel': 1,
-        'energia': 100
+# --- 3. GESTIÓN DE ESTADO (La Memoria de la App) ---
+if 'user' not in st.session_state:
+    st.session_state.user = {
+        'name': 'Élève',
+        'dragon_name': 'Lumière',
+        'current_phase': 'Éveil', # Fase inicial
+        'journal': [], # Historial de registros
+        'stats': {'Compréhension': 0, 'Expression': 0, 'Effort': 0} # Contadores internos invisibles para cambiar forma
     }
 
-# --- 3. RECURSOS VISUALES (HUEVOS POR COLOR) ---
-ASSETS = {
-    'huevo': {
-        'feu': 'https://cdn-icons-png.flaticon.com/512/7880/7880228.png',   # Rojo
-        'eau': 'https://cdn-icons-png.flaticon.com/512/7880/7880222.png',   # Azul
-        'nature': 'https://cdn-icons-png.flaticon.com/512/7880/7880233.png' # Verde
+# --- 4. LÓGICA DE LAS FASES Y EVOLUCIÓN ---
+PHASES = {
+    "Éveil": {
+        "desc": "🌱 Curiosité et Observation", 
+        "color": "#a8e6cf", 
+        "msg": "Ta dragonne s'éveille. Elle observe le monde avec calme.",
+        "icon": "https://cdn-icons-png.flaticon.com/512/3232/3232717.png" # Huevo/Bebé
     },
-    'dragon': {
-        'feu': 'https://cdn-icons-png.flaticon.com/512/1625/1625348.png',
-        'eau': 'https://cdn-icons-png.flaticon.com/512/3093/3093608.png',
-        'nature': 'https://cdn-icons-png.flaticon.com/512/3715/3715097.png'
+    "Expansion": {
+        "desc": "🔥 Action et Courage", 
+        "color": "#ffaaa5", 
+        "msg": "Ta dragonne déploie ses ailes. Elle veut voler et s'exprimer.",
+        "icon": "https://cdn-icons-png.flaticon.com/512/1625/1625348.png" # Dragón Rojo/Fuego
+    },
+    "Repli": {
+        "desc": "🌙 Pause et Réflexion", 
+        "color": "#8aaae5", 
+        "msg": "Ta dragonne se repose. Elle reprend des forces pour mieux comprendre.",
+        "icon": "https://cdn-icons-png.flaticon.com/512/7880/7880222.png" # Dragón Azul/Dormido o Huevo Azul
+    },
+    "Renouveau": {
+        "desc": "✨ Intégration et Lumière", 
+        "color": "#ffd3b6", 
+        "msg": "Ta dragonne brille. Elle a compris et se sent prête pour la suite.",
+        "icon": "https://cdn-icons-png.flaticon.com/512/3715/3715097.png" # Dragón Dorado/Verde
     }
 }
 
-# --- 4. LÓGICA DE JUEGO ---
-def calcular_nivel(xp_actual, nivel_actual):
-    # Coste para subir de nivel: Nivel * 100 XP
-    xp_necesaria = nivel_actual * 100
-    return xp_necesaria
-
-def get_imagen_actual():
-    # Si es nivel 1, es huevo. Si es > 1, es dragón.
-    if st.session_state.db['nivel'] == 1:
-        return ASSETS['huevo'][st.session_state.db['elemento']]
-    else:
-        return ASSETS['dragon'][st.session_state.db['elemento']]
-
-# --- 5. ONBOARDING (PRIMERA VEZ) ---
-if not st.session_state.db['setup_complete']:
-    st.title("🥚 Choisis ton Destin")
-    st.write("Selecciona el color de tu huevo para comenzar:")
+def guardar_entrada(tipo, texto, dificultad, emocion, mejora):
+    # Guardamos la entrada
+    entry = {
+        "date": datetime.now().strftime("%d/%m/%Y"),
+        "phase": st.session_state.user['current_phase'],
+        "type": tipo,
+        "text": texto,
+        "difficulty": dificultad,
+        "emotion": emocion,
+        "improvement": mejora
+    }
+    st.session_state.user['journal'].insert(0, entry) # El más reciente primero
     
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.image(ASSETS['huevo']['feu'], width=80)
-        if st.button("Rouge (Feu)"):
-            st.session_state.db['elemento'] = 'feu'
-            st.session_state.db['setup_complete'] = True
-            st.rerun()
-    with col2:
-        st.image(ASSETS['huevo']['nature'], width=80)
-        if st.button("Vert (Nature)"):
-            st.session_state.db['elemento'] = 'nature'
-            st.session_state.db['setup_complete'] = True
-            st.rerun()
-    with col3:
-        st.image(ASSETS['huevo']['eau'], width=80)
-        if st.button("Bleu (Eau)"):
-            st.session_state.db['elemento'] = 'eau'
-            st.session_state.db['setup_complete'] = True
-            st.rerun()
+    # Evolución invisible (modifica sutilmente la dragona internamente)
+    if tipo == "🧠 Compréhension": st.session_state.user['stats']['Compréhension'] += 1
+    elif tipo == "💬 Expression": st.session_state.user['stats']['Expression'] += 1
+    elif tipo == "🌱 Effort personnel": st.session_state.user['stats']['Effort'] += 1
 
-# --- 6. APLICACIÓN PRINCIPAL ---
-else:
-    # --- MENÚ DE NAVEGACIÓN INFERIOR ---
-    menu_options = ["🏠 Accueil", "⚔️ Quiz", "📊 Stats"]
-    selection = st.radio(
-        "", 
-        menu_options, 
-        horizontal=True, 
-        label_visibility="collapsed",
-        key="nav_menu"
+# --- 5. INTERFAZ DE USUARIO ---
+
+# --- CABECERA ---
+col_h1, col_h2 = st.columns([3, 1])
+with col_h1:
+    st.title(f"🐉 {st.session_state.user['dragon_name']}")
+with col_h2:
+    # Selector de Fase (Metacognición: El alumno decide dónde está)
+    st.caption("Mon Cycle Actuel")
+    fase_seleccionada = st.selectbox(
+        "Fase", 
+        options=list(PHASES.keys()), 
+        index=list(PHASES.keys()).index(st.session_state.user['current_phase']),
+        label_visibility="collapsed"
     )
+    if fase_seleccionada != st.session_state.user['current_phase']:
+        st.session_state.user['current_phase'] = fase_seleccionada
+        st.rerun()
 
-    # --- VISTA: HOME (ACCUEIL) ---
-    if selection == "🏠 Accueil":
-        st.header(f"Tu Dragon: {st.session_state.db['elemento'].capitalize()}")
-        
-        # Tarjeta Visual del Dragón
-        st.markdown('<div class="dragon-card">', unsafe_allow_html=True)
-        st.image(get_imagen_actual(), width=150)
-        
-        # Lógica de XP
-        xp_total = st.session_state.db['xp']
-        nivel = st.session_state.db['nivel']
-        meta = calcular_nivel(xp_total, nivel)
-        
-        # Barra de Progreso Matemática
-        progreso = min(xp_total / meta, 1.0)
-        falta = meta - xp_total
-        
-        st.subheader(f"Niveau {nivel}")
-        st.markdown(f"""
-            <div class="xp-text">
-                XP: {xp_total} / {meta} <br>
-                <span style='color:#FF4B4B; font-size:0.8em;'>Il te manque {falta} XP pour évoluer!</span>
-            </div>
-        """, unsafe_allow_html=True)
-        st.progress(progreso)
-        st.markdown('</div>', unsafe_allow_html=True)
+# --- VISUALIZACIÓN DE LA DRAGONA (CENTRO DEL PROYECTO) ---
+current_p_data = PHASES[st.session_state.user['current_phase']]
 
-    # --- VISTA: QUIZ (TEST) ---
-    elif selection == "⚔️ Quiz":
-        st.header("📝 Le Challenge")
-        st.caption("Responde correctamente para ganar XP y evolucionar.")
-        
-        with st.container():
-            st.markdown('<div class="dragon-card">', unsafe_allow_html=True)
-            st.markdown("### Question du jour")
-            st.write("Transforma la frase al **Passé Composé**:")
-            st.info("Je mange une pomme.")
-            
-            opcion = st.radio("Selecciona:", 
-                             ["J'ai mangé une pomme", 
-                              "Je suis mangé une pomme", 
-                              "Je mangeai une pomme"])
-            
-            if st.button("Vérifier Réponse"):
-                if opcion == "J'ai mangé une pomme":
-                    puntos = 20
-                    st.session_state.db['xp'] += puntos
-                    st.balloons()
-                    st.success(f"¡Correcto! +{puntos} XP")
-                    
-                    # Chequeo de nivel
-                    meta = calcular_nivel(st.session_state.db['xp'], st.session_state.db['nivel'])
-                    if st.session_state.db['xp'] >= meta:
-                        st.session_state.db['nivel'] += 1
-                        st.session_state.db['xp'] = 0 
-                        st.toast("¡Has subido de nivel!", icon="🆙")
-                    
-                    time.sleep(1.5)
-                    st.rerun()
-                else:
-                    st.error("Incorrect. Recuerda: Manger usa el auxiliar Avoir.")
-            st.markdown('</div>', unsafe_allow_html=True)
+st.markdown(f"""
+    <div style="background-color: {current_p_data['color']}; padding: 20px; border-radius: 20px; text-align: center; box-shadow: inset 0 0 20px rgba(0,0,0,0.1);">
+        <h2 style="color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);">{st.session_state.user['current_phase']}</h2>
+        <p style="color: white; font-style: italic;">{current_p_data['desc']}</p>
+    </div>
+""", unsafe_allow_html=True)
 
-    # --- VISTA: STATS (PROFESOR) ---
-    elif selection == "📊 Stats":
-        st.header("📊 Tes Compétences")
-        st.markdown('<div class="dragon-card">', unsafe_allow_html=True)
+col_img, col_txt = st.columns([1, 2])
+with col_img:
+    st.image(current_p_data['icon'], width=130)
+with col_txt:
+    st.info(f"🗨️ {current_p_data['msg']}")
+    
+    # Feedback Sutil basado en acumulado (Sin números)
+    stats = st.session_state.user['stats']
+    feedback_text = []
+    if stats['Expression'] > stats['Compréhension']:
+        feedback_text.append("Ses ailes semblent fortes (Expression).")
+    if stats['Compréhension'] > stats['Expression']:
+        feedback_text.append("Son regard est profond (Compréhension).")
+    if stats['Effort'] > 2:
+        feedback_text.append("Elle a une aura brillante (Effort).")
         
-        # Datos visuales
-        stats = {
-            'Grammaire': 80,
-            'Vocabulaire': 45,
-            'Oral': 60
-        }
-        st.bar_chart(stats)
+    if feedback_text:
+        st.caption("Observations: " + " ".join(feedback_text))
+
+st.divider()
+
+# --- PESTAÑAS PRINCIPALES ---
+tab1, tab2, tab3 = st.tabs(["📝 Journal Hebdo", "📖 Mon Histoire", "ℹ️ Le Projet"])
+
+# --- TAB 1: REGISTRO SEMANAL (REFLEXIÓN) ---
+with tab1:
+    st.subheader("Bilan de la Semaine")
+    with st.form("journal_form"):
+        st.markdown("### 1. Qu'est-ce qui a brillé ? (Obligatoire)")
+        tipo_avance = st.radio(
+            "Choisis ton type d'avancée :",
+            ["🧠 Compréhension (J'ai compris)", "💬 Expression (J'ai dit/écrit)", "🌱 Effort personnel (J'ai persévéré)"],
+            horizontal=False
+        )
+        
+        texto_avance = st.text_input(
+            "Complète la phrase (en français) :",
+            placeholder="Aujourd'hui j'ai compris que... / J'ai réussi à..."
+        )
         
         st.markdown("---")
-        st.caption("Objetivo de Desarrollo Sostenible (ODS 4)")
-        st.write("🎓 **Éducation de Qualité**")
-        st.info("Estás en el percentil superior de tu clase esta semana.")
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("### 2. Un nuage à dissiper ? (Optionnel)")
+        
+        tiene_dificultad = st.checkbox("Je veux noter une difficulté (pour m'améliorer)")
+        dificultad_txt = ""
+        emocion = ""
+        intencion = ""
+        
+        if tiene_dificultad:
+            col_d1, col_d2 = st.columns(2)
+            with col_d1:
+                dificultad_txt = st.text_input("J'ai eu du mal à...", placeholder="ex: prononcer le 'R'")
+            with col_d2:
+                emocion = st.select_slider("Je me suis senti(e)...", options=["😕", "😤", "😰", "😴"])
+            
+            intencion = st.text_input("La prochaine fois...", placeholder="ex: Je vais écouter l'audio deux fois")
+
+        submit = st.form_submit_button("Enregistrer dans mon Journal")
+        
+        if submit:
+            if len(texto_avance) > 3:
+                guardar_entrada(tipo_avance.split(" ")[0] + " " + tipo_avance.split(" ")[1], texto_avance, dificultad_txt, emocion, intencion)
+                st.balloons()
+                st.success("C'est noté ! Ta dragonne intègre cette expérience.")
+            else:
+                st.error("N'oublie pas d'écrire ta phrase en français.")
+
+# --- TAB 2: HISTORIA (VISUALIZACIÓN DEL PROCESO) ---
+with tab2:
+    st.subheader("Mes Traces")
+    if not st.session_state.user['journal']:
+        st.info("Ton journal est vide. Fais ton premier bilan !")
+    
+    for entry in st.session_state.user['journal']:
+        # Estilo de tarjeta diferente según si hubo dificultad o no
+        border_color = "#6C63FF" if not entry['difficulty'] else "#FFAAA5"
+        
+        st.markdown(f"""
+        <div class="journal-card" style="border-left: 5px solid {border_color};">
+            <small style="color: gray;">📅 {entry['date']} | Phase: <strong>{entry['phase']}</strong></small>
+            <h4>{entry['type']}</h4>
+            <p style="font-size: 1.1em; font-style: italic;">"{entry['text']}"</p>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if entry['difficulty']:
+            st.markdown(f"""
+            <div style="margin-left: 20px; margin-bottom: 20px; padding: 10px; background-color: #fff0f0; border-radius: 10px;">
+                <p><strong>☁️ Point à soigner:</strong> {entry['difficulty']} {entry['emotion']}</p>
+                <p>👉 <em>Objectif: {entry['improvement']}</em></p>
+            </div>
+            """, unsafe_allow_html=True)
+
+# --- TAB 3: FILOSOFÍA (PARA EL ALUMNO) ---
+with tab3:
+    st.markdown("""
+    ### 🐉 Comment ça marche ?
+    
+    Cette application est ton **miroir d'apprentissage**. 
+    
+    1. **Pas de notes, pas de compétition.** Ta dragonne est unique.
+    2. **Les Cycles (Phases) :** L'apprentissage n'est pas une ligne droite.
+        - **🌱 Éveil :** Tu découvres, tu observes.
+        - **🔥 Expansion :** Tu te lances, tu parles, tu écris !
+        - **🌙 Repli :** C'est difficile ? C'est normal. On ralentit pour mieux comprendre.
+        - **✨ Renouveau :** Tu as intégré, tu es prêt pour la suite.
+    
+    *C'est toi qui décides dans quelle phase tu te trouves en haut à droite.*
+    """)
