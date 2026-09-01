@@ -1,9 +1,16 @@
 import streamlit as st
-import random
+from data.database import get_user_data, save_user_data
 
-def init_state():
-    if 'user' not in st.session_state:
+def load_user_session(db, user_id):
+    """Carga los datos de Firebase al iniciar sesión."""
+    cloud_data = get_user_data(db, user_id)
+    
+    if cloud_data:
+        st.session_state.user = cloud_data
+    else:
+        # Valores por defecto para un nuevo alumno
         st.session_state.user = {
+            'id': user_id,
             'setup_complete': False,
             'nombre': 'Apprenti',
             'elemento': 'Fuego',
@@ -13,32 +20,9 @@ def init_state():
             'fase_actual': 'Éveil',
             'view': 'Home'
         }
-        
-    if 'memory_game' not in st.session_state:
-        st.session_state.memory_game = {
-            'cards': [],
-            'flipped': [],
-            'matched': set(),
-            'game_over': False,
-            'initialized': False
-        }
+        sync_to_cloud(db) # Guardamos el perfil inicial
 
-def get_assets():
-    return {
-        "Fuego": {
-            "Éveil": "https://cdn-icons-png.flaticon.com/512/7880/7880228.png", 
-            "Expansion": "https://cdn-icons-png.flaticon.com/512/1625/1625348.png", 
-            "Repli": "https://cdn-icons-png.flaticon.com/512/4203/4203150.png",
-            "Renouveau": "https://cdn-icons-png.flaticon.com/512/4699/4699313.png"
-        },
-        "Agua": {
-            "Éveil": "https://cdn-icons-png.flaticon.com/512/7880/7880222.png", 
-            "Expansion": "https://cdn-icons-png.flaticon.com/512/3093/3093608.png", 
-            "Repli": "https://cdn-icons-png.flaticon.com/512/4203/4203158.png"
-        },
-        "Naturaleza": {
-            "Éveil": "https://cdn-icons-png.flaticon.com/512/7880/7880233.png", 
-            "Expansion": "https://cdn-icons-png.flaticon.com/512/3715/3715097.png", 
-            "Repli": "https://cdn-icons-png.flaticon.com/512/4203/4203164.png"
-        }
-    }
+def sync_to_cloud(db):
+    """Función para llamar cada vez que el alumno gana XP o cambia de fase."""
+    if 'user' in st.session_state and 'id' in st.session_state.user:
+        save_user_data(db, st.session_state.user['id'], st.session_state.user)
