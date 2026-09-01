@@ -1,195 +1,237 @@
 import streamlit as st
-import streamlit.components.v1 as components
-import json
+import pandas as pd
+import os
+import qrcode
+from PIL import Image, ImageDraw, ImageFont
+import io
 
-# ==========================================================
-# BLOQUE 1: CONFIGURACIÓN BÁSICA Y FIREBASE
-# ==========================================================
-st.set_page_config(page_title="Académie des Dragons", layout="wide", page_icon="🐉")
+### --- 1. CONFIGURACIÓN VISUAL Y APP ---
+st.set_page_config(
+    page_title="L'Alliance Olympique",
+    page_icon="🐉",
+    layout="centered",
+    initial_sidebar_state="collapsed"
+)
 
-# IMPORTANTE: Debes ir a firebase.google.com, crear un proyecto web gratuito y pegar aquí tus claves reales.
-FIREBASE_CONFIG = """
-  apiKey: "TU_API_KEY",
-  authDomain: "tu-proyecto.firebaseapp.com",
-  projectId: "tu-proyecto",
-  storageBucket: "tu-proyecto.appspot.com",
-  messagingSenderId: "TUS_SENDER_ID",
-  appId: "TU_APP_ID"
-"""
-
-# ==========================================================
-# BLOQUE 2: ESTILOS VISUALES (CSS)
-# ==========================================================
-# Usaremos un diseño tipo "Glassmorphism" para una interfaz moderna y atractiva[cite: 2].
-CSS_CODE = """
+### --- 2. CSS AVANZADO (DISEÑO GEN Z) ---
+st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
-    body { font-family: 'Poppins', sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 20px; }
+    :root { --blue: #4D79FF; --yellow: #FFD93D; --green: #6BCB77; --red: #FF6B6B; --bg: #F4F7F6; }
+    .stApp { background-color: var(--bg); font-family: 'Segoe UI', sans-serif; }
+    #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
     
-    .glass-panel {
-        background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(12px);
-        border-radius: 20px;
-        padding: 20px;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
-        margin-bottom: 20px;
-        text-align: center;
+    /* TARJETAS */
+    .css-1r6slb0, .stDataFrame, .stForm, div[data-testid="stExpander"], .solid-panel {
+        background: white; border-radius: 24px; padding: 20px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.05); border: none; margin-bottom: 15px;
     }
     
-    .dragon-grid { display: flex; justify-content: space-around; gap: 15px; flex-wrap: wrap; }
-    
-    .dragon-card {
-        background: white; border-radius: 15px; padding: 20px; width: 30%;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 2px solid transparent; transition: 0.3s;
+    /* BOTONES */
+    .stButton > button {
+        background: linear-gradient(90deg, var(--blue), #3a60d0); color: white;
+        border-radius: 15px; border: none; padding: 10px; font-weight: 700; width: 100%;
     }
-    .dragon-card.eau { border-color: #00C4CC; }
-    .dragon-card.plante { border-color: #4CAF50; }
-    .dragon-card.feu { border-color: #FF5722; }
     
-    .xp-bar-bg { background: #eee; height: 15px; border-radius: 10px; overflow: hidden; margin-top: 10px; }
-    .xp-bar-fill { height: 100%; transition: width 0.5s; }
-    .eau-fill { background: #00C4CC; }
-    .plante-fill { background: #4CAF50; }
-    .feu-fill { background: #FF5722; }
+    /* AVATAR */
+    .avatar-circle {
+        font-size: 60px; background: #EFF3FF; width: 100px; height: 100px;
+        border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        margin: 0 auto 20px auto; border: 3px solid var(--blue);
+    }
     
-    .btn-action { background: #333; color: white; border: none; border-radius: 10px; padding: 10px 15px; width: 100%; margin-top: 15px; cursor: pointer; font-weight: bold; }
-    .btn-action:hover { background: #555; }
+    /* MENÚ INFERIOR */
+    .dock-nav {
+        position: fixed; bottom: 0; left: 0; width: 100%;
+        background-color: white; border-top: 1px solid #eee;
+        display: flex; justify-content: space-around; padding: 15px 0; z-index: 1000;
+    }
 </style>
-"""
+""", unsafe_allow_html=True)
 
-# ==========================================================
-# BLOQUE 3: LÓGICA BACKEND Y BASE DE DATOS (JAVASCRIPT)
-# ==========================================================
-# Aquí importamos los módulos ES6 oficiales de Firebase y gestionamos la subida de nivel[cite: 2].
-JS_CODE = f"""
-<script type="module">
-    import {{ initializeApp }} from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-    import {{ getFirestore, doc, setDoc, getDoc }} from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+### --- 3. GESTIÓN DE DATOS (DATABASE ACTUALIZADA) ---
+FILE_ELEVES = 'eleves.csv'
+FILE_PROPOSALS = 'propositions.csv'
+FILE_VOTES = 'votes_finaux.csv'
+FILE_EVAL_PROF = 'evaluation_prof.csv'
 
-    // Conectar con Firestore[cite: 2]
-    const firebaseConfig = {{ {FIREBASE_CONFIG} }};
-    let db = null;
-    try {{
-        const app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        console.log("🔥 Firebase Firestore Conectado!");
-    }} catch (e) {{
-        console.error("Error al conectar Firebase:", e);
-    }}
+def init_db():
+    # AÑADIDO: 'XP' a cols_eleves para guardar la experiencia del dragón
+    cols_eleves = ['Pseudo', 'Avatar', 'Forces', 'Faiblesse', 'Slogan', 'TeamID', 'XP']
+    cols_props = ['Demandeur', 'Partenaire', 'Justification', 'Votes_Pour', 'Votes_Contre', 'Status', 'Nom_Epreuve']
+    cols_votes = ['Votante', 'Equite', 'FairPlay', 'Innovation', 'Francophonie']
+    cols_eval = ['Equipe', 'Nom_Epreuve', 'Stars_Epreuve', 'Stars_Eleve1', 'Stars_Eleve2', 'Commentaire']
 
-    // Estado inicial del alumno
-    window.studentData = {{
-        id: "ALUMNO_DEMO_01",
-        dragons: {{
-            eau: {{ xp: 0, level: 1, name: "Goutte" }},
-            plante: {{ xp: 0, level: 1, name: "Feuille" }},
-            feu: {{ xp: 0, level: 1, name: "Flamme" }}
-        }}
-    }};
+    # 1. Alumnos
+    if not os.path.exists(FILE_ELEVES):
+        pd.DataFrame(columns=cols_eleves).to_csv(FILE_ELEVES, index=False)
+    else:
+        df = pd.read_csv(FILE_ELEVES)
+        if 'XP' not in df.columns:
+            df['XP'] = 0
+            df.to_csv(FILE_ELEVES, index=False)
 
-    window.app = {{
-        init: async () => {{
-            if (!db) return;
-            // Recuperar datos de la nube al entrar[cite: 2]
-            const docRef = doc(db, "students", window.studentData.id);
-            const docSnap = await getDoc(docRef);
-            
-            if (docSnap.exists()) {{
-                window.studentData = docSnap.data();
-            }} else {{
-                // Si es nuevo, lo guardamos por primera vez
-                await setDoc(docRef, window.studentData);
-            }}
-            window.app.updateUI();
-        }},
+    # 2. Propuestas
+    if not os.path.exists(FILE_PROPOSALS):
+        pd.DataFrame(columns=cols_props).to_csv(FILE_PROPOSALS, index=False)
+        
+    # 3. Votos Finales
+    if not os.path.exists(FILE_VOTES):
+        pd.DataFrame(columns=cols_votes).to_csv(FILE_VOTES, index=False)
 
-        addXP: async (type, amount) => {{
-            let dragon = window.studentData.dragons[type];
-            dragon.xp += amount;
-            
-            // Lógica de subida de nivel (cada 100 XP sube de fase)
-            if (dragon.xp >= dragon.level * 100) {{
-                dragon.xp = 0;
-                dragon.level += 1;
-                alert(`¡Felicidades! Tu dragón de ${{type}} ha evolucionado al Nivel ${{dragon.level}}`);
-            }}
-            
-            window.app.updateUI();
-            
-            // Guardar progreso en la nube Firestore de forma segura[cite: 2]
-            if (db) {{
-                await setDoc(doc(db, "students", window.studentData.id), window.studentData);
-            }}
-        }},
+    # 4. Evaluación Profesor
+    if not os.path.exists(FILE_EVAL_PROF):
+        pd.DataFrame(columns=cols_eval).to_csv(FILE_EVAL_PROF, index=False)
 
-        updateUI: () => {{
-            const types = ['eau', 'plante', 'feu'];
-            types.forEach(type => {{
-                let data = window.studentData.dragons[type];
-                document.getElementById(`lvl-${{type}}`).innerText = `Niv. ${{data.level}}`;
-                document.getElementById(`xp-${{type}}`).innerText = `${{data.xp}} / ${{data.level * 100}} XP`;
+def load_data(file): return pd.read_csv(file)
+def save_data(df, file): df.to_csv(file, index=False)
+
+init_db()
+df_eleves = load_data(FILE_ELEVES)
+
+### --- 4. FUNCIÓN GENERADOR DE CARNET ---
+def create_badge(pseudo, avatar, role="Athlète"):
+    W, H = 400, 600
+    img = Image.new('RGB', (W, H), color='white')
+    d = ImageDraw.Draw(img)
+    d.rectangle([(0, 0), (W, 150)], fill='#4D79FF')
+    try: font = ImageFont.truetype("arial.ttf", 40)
+    except: font = ImageFont.load_default()
+    d.text((20, 50), "ACADÉMIE DRAGON", fill="white", font=font)
+    d.text((150, 200), avatar, fill="black", font=font)
+    d.text((50, 300), pseudo, fill="black", font=font)
+    
+    qr = qrcode.QRCode(box_size=4, border=1)
+    qr.add_data(f"ID:{pseudo}")
+    qr.make(fit=True)
+    img.paste(qr.make_image(fill_color="black", back_color="white"), (100, 420))
+    
+    img_byte_arr = io.BytesIO()
+    img.save(img_byte_arr, format='PNG')
+    return img_byte_arr.getvalue()
+
+### --- 5. ENRUTAMIENTO Y ESTADO GLOBAL ---
+if 'page' not in st.session_state: 
+    st.session_state['page'] = 'profile'
+if 'current_user' not in st.session_state:
+    st.session_state['current_user'] = None
+
+def nav(page_name): 
+    st.session_state['page'] = page_name
+    st.rerun()
+
+def ganar_xp(cantidad):
+    if st.session_state['current_user']:
+        idx = df_eleves.index[df_eleves['Pseudo'] == st.session_state['current_user']].tolist()[0]
+        df_eleves.at[idx, 'XP'] += cantidad
+        save_data(df_eleves, FILE_ELEVES)
+        st.toast(f"¡+{cantidad} XP ganada!", icon="🐉")
+
+# ==========================================
+#              VISTAS DE LA APP
+# ==========================================
+
+# --- VISTA 1: CREACIÓN DE PERFIL (SOLO 1 DRAGÓN) ---
+if st.session_state['page'] == 'profile':
+    st.markdown("<h2 style='text-align:center;'>Choisis ton Dragon 🥚</h2>", unsafe_allow_html=True)
+    
+    with st.form("profile_maker"):
+        pseudo = st.text_input("Ton Pseudo (Nombre):", placeholder="Ex: Apprenti_01")
+        
+        st.markdown("### L'Élément de ton Dragon")
+        st.caption("Selecciona solo uno. Tu elección definirá tu elemento ODS.")
+        # SELECCIÓN ÚNICA DE DRAGÓN
+        avatar = st.radio("Tipos de Dragón:", [
+            "💧 Dragon d'Eau (Adaptabilidad - ODS 14)", 
+            "🌿 Dragon de Plante (Ecología - ODS 15)", 
+            "🔥 Dragon de Feu (Energía - ODS 7)"
+        ], label_visibility="collapsed")
+        
+        forces = st.selectbox("Ton Super-Pouvoir:", ["Vitesse 🏃‍♂️", "Force 💪", "Stratégie 🧠"])
+        
+        if st.form_submit_button("Éclore l'Œuf (Empezar)"):
+            if pseudo:
+                # Extraemos solo el emoji del dragón elegido
+                emoji_dragon = avatar.split(" ")[0] 
                 
-                let pct = (data.xp / (data.level * 100)) * 100;
-                document.getElementById(`bar-${{type}}`).style.width = `${{pct}}%`;
-            }});
-        }}
-    }};
+                # Comprobar si ya existe
+                if pseudo not in df_eleves['Pseudo'].values:
+                    new_user = pd.DataFrame([[pseudo, emoji_dragon, forces, "Aucune", "Prêt", "None", 0]], 
+                                          columns=df_eleves.columns)
+                    global df_eleves
+                    df_eleves = pd.concat([df_eleves, new_user], ignore_index=True)
+                    save_data(df_eleves, FILE_ELEVES)
+                
+                st.session_state['current_user'] = pseudo
+                nav('home')
+            else:
+                st.error("¡Debes introducir un nombre!")
 
-    // Iniciar la app cuando cargue la página
-    setTimeout(() => window.app.init(), 300);
-</script>
-"""
+# --- VISTA 2: HOME / DASHBOARD ---
+elif st.session_state['page'] == 'home':
+    if not st.session_state['current_user']:
+        nav('profile')
+        
+    user_data = df_eleves[df_eleves['Pseudo'] == st.session_state['current_user']].iloc[0]
+    nivel = int(user_data['XP'] / 100) + 1
+    
+    st.markdown(f"<div class='avatar-circle'>{user_data['Avatar']}</div>", unsafe_allow_html=True)
+    st.markdown(f"<h2 style='text-align:center;'>{user_data['Pseudo']}</h2>", unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    col1.metric("Niveau (Nivel)", f"Lvl {nivel}")
+    col2.metric("Expérience", f"{user_data['XP']} XP")
+    
+    st.progress(min((user_data['XP'] % 100) / 100, 1.0))
+    st.caption(f"Faltan {100 - (user_data['XP'] % 100)} XP para el próximo nivel.")
+    
+    st.markdown("---")
+    img = create_badge(user_data['Pseudo'], user_data['Avatar'])
+    st.download_button("⬇️ Télécharger ma Carte (PDF/PNG)", img, file_name="mon_dragon.png", mime="image/png")
 
-# ==========================================================
-# BLOQUE 4: ESTRUCTURA VISUAL (HTML)
-# ==========================================================
-HTML_CODE = f"""
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    {CSS_CODE}
-</head>
-<body>
-    <div class="glass-panel">
-        <h1>🐲 Tes Dragons de la 2030</h1>
-        <p>Gana experiencia cumpliendo misiones ODS para evolucionarlos.</p>
-    </div>
+# --- VISTA 3: MISIONES (ODS) ---
+elif st.session_state['page'] == 'missions':
+    st.markdown("<h2>Missions ODD 🌍</h2>", unsafe_allow_html=True)
+    st.info("Completa retos ecológicos en clase para ganar XP para tu dragón.")
+    
+    with st.container(border=True):
+        st.markdown("#### ♻️ Gardiens de la Terre")
+        st.caption("Recicla 3 envases en el instituto y escribe sus nombres en francés.")
+        if st.button("Valider Mission (+50 XP)", key="m1"):
+            ganar_xp(50)
+            st.rerun()
 
-    <div class="dragon-grid">
-        <!-- DRAGÓN DE AGUA -->
-        <div class="dragon-card eau">
-            <h2><i class="fa-solid fa-droplet" style="color: #00C4CC;"></i> Eau</h2>
-            <h4 id="lvl-eau">Niv. 1</h4>
-            <div class="xp-bar-bg"><div id="bar-eau" class="xp-bar-fill eau-fill" style="width: 0%;"></div></div>
-            <p id="xp-eau" style="font-size: 0.8rem; text-align: center; margin-top:5px;">0 / 100 XP</p>
-            <button class="btn-action" onclick="window.app.addXP('eau', 25)">+25 XP (Misión ODS 14)</button>
-        </div>
+    with st.container(border=True):
+        st.markdown("#### 💧 L'Eau c'est la vie")
+        st.caption("Trae una botella reutilizable a clase durante toda la semana.")
+        if st.button("Valider Mission (+100 XP)", key="m2"):
+            ganar_xp(100)
+            st.rerun()
 
-        <!-- DRAGÓN DE PLANTA -->
-        <div class="dragon-card plante">
-            <h2><i class="fa-solid fa-leaf" style="color: #4CAF50;"></i> Plante</h2>
-            <h4 id="lvl-plante">Niv. 1</h4>
-            <div class="xp-bar-bg"><div id="bar-plante" class="xp-bar-fill plante-fill" style="width: 0%;"></div></div>
-            <p id="xp-plante" style="font-size: 0.8rem; text-align: center; margin-top:5px;">0 / 100 XP</p>
-            <button class="btn-action" onclick="window.app.addXP('plante', 25)">+25 XP (Misión ODS 13)</button>
-        </div>
+# --- VISTA 4: ARCADE (MINIJUEGOS) ---
+elif st.session_state['page'] == 'arcade':
+    st.markdown("<h2>Salle d'Arcade 🎮</h2>", unsafe_allow_html=True)
+    st.info("Entrena tu gramática francesa para fortalecer a tu dragón.")
+    
+    st.markdown("#### Quiz: Le Futur Simple")
+    q1 = st.radio("Demain, je _____ (manger) sain.", ["mangerais", "mangerai", "mange"], index=None)
+    if st.button("Comprobar Respuesta"):
+        if q1 == "mangerai":
+            st.success("¡Correcto!")
+            ganar_xp(20)
+        else:
+            st.error("Incorrecto. Intenta de nuevo.")
 
-        <!-- DRAGÓN DE FUEGO -->
-        <div class="dragon-card feu">
-            <h2><i class="fa-solid fa-fire" style="color: #FF5722;"></i> Feu</h2>
-            <h4 id="lvl-feu">Niv. 1</h4>
-            <div class="xp-bar-bg"><div id="bar-feu" class="xp-bar-fill feu-fill" style="width: 0%;"></div></div>
-            <p id="xp-feu" style="font-size: 0.8rem; text-align: center; margin-top:5px;">0 / 100 XP</p>
-            <button class="btn-action" onclick="window.app.addXP('feu', 25)">+25 XP (Misión ODS 7)</button>
-        </div>
-    </div>
+# ==========================================
+# MENÚ INFERIOR DE NAVEGACIÓN
+# ==========================================
+st.write("<br><br><br><br>", unsafe_allow_html=True) # Espacio para el menú fijo
+c1, c2, c3, c4 = st.columns(4)
 
-    {JS_CODE}
-</body>
-</html>
-"""
-
-# Renderizar toda la interfaz en Streamlit[cite: 2]
-components.html(HTML_CODE, height=600, scrolling=True)
+with c1:
+    if st.button("👤\nPerfil"): nav('profile')
+with c2:
+    if st.button("🏠\nInicio"): nav('home')
+with c3:
+    if st.button("🌍\nMisiones"): nav('missions')
+with c4:
+    if st.button("🎮\nArcade"): nav('arcade')
