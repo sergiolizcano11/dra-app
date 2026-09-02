@@ -147,6 +147,7 @@ if st.session_state['page'] == 'profile':
         ], label_visibility="collapsed")
         
         forces = st.selectbox("Ton Super-Pouvoir:", ["Vitesse 🏃‍♂️", "Force 💪", "Stratégie 🧠"])
+        
        if st.form_submit_button("Éclore l'Œuf (Empezar)"):
             if pseudo:
                 # Extraemos solo el emoji del dragón elegido
