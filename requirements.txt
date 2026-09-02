@@ -5,5 +5,4 @@ fpdf
 gTTS
 streamlit-audiorec
 watchdog
-qrcode
 Pillow
