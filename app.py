@@ -147,8 +147,7 @@ if st.session_state['page'] == 'profile':
         ], label_visibility="collapsed")
         
         forces = st.selectbox("Ton Super-Pouvoir:", ["Vitesse 🏃‍♂️", "Force 💪", "Stratégie 🧠"])
-        
-        if st.form_submit_button("Éclore l'Œuf (Empezar)"):
+       if st.form_submit_button("Éclore l'Œuf (Empezar)"):
             if pseudo:
                 # Extraemos solo el emoji del dragón elegido
                 emoji_dragon = avatar.split(" ")[0] 
@@ -157,7 +156,8 @@ if st.session_state['page'] == 'profile':
                 if pseudo not in df_eleves['Pseudo'].values:
                     new_user = pd.DataFrame([[pseudo, emoji_dragon, forces, "Aucune", "Prêt", "None", 0]], 
                                           columns=df_eleves.columns)
-                    global df_eleves
+                    
+                    # AQUÍ ESTABA EL ERROR: Hemos eliminado la línea "global df_eleves"
                     df_eleves = pd.concat([df_eleves, new_user], ignore_index=True)
                     save_data(df_eleves, FILE_ELEVES)
                 
@@ -165,7 +165,6 @@ if st.session_state['page'] == 'profile':
                 nav('home')
             else:
                 st.error("¡Debes introducir un nombre!")
-
 # --- VISTA 2: HOME / DASHBOARD ---
 elif st.session_state['page'] == 'home':
     if not st.session_state['current_user']:
