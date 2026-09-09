@@ -4,291 +4,321 @@ import os
 import qrcode
 from PIL import Image, ImageDraw, ImageFont
 import io
-import firebase_admin
-from firebase_admin import credentials, firestore
-import json
 
-# ==========================================
-# BLOQUE 1: CONFIGURACIÓN VISUAL Y APP
-# ==========================================
+# --- 1. CONFIGURACIÓN VISUAL Y APP ---
 st.set_page_config(
-    page_title="Dragon Évolution",
-    page_icon="🐉",
+    page_title="L'Alliance Olympique",
+    page_icon="🏅",
     layout="centered",
     initial_sidebar_state="collapsed"
 )
 
-# ==========================================
-# BLOQUE 2: CSS AVANZADO (DISEÑO GEN Z)
-# ==========================================
-# Implementación de estética Gen Z con bordes redondeados y diseño limpio[cite: 1]
+# --- 2. CSS AVANZADO (DISEÑO MÓVIL / GEN Z) ---
 st.markdown("""
 <style>
+    /* PALETA DE COLORES */
     :root {
-        --bg: #1a1a2e;
-        --card-bg: rgba(25, 30, 45, 0.95);
-        --accent: #f1c40f;
-        --water: #3498db;
-        --fire: #e74c3c;
-        --plant: #2ecc71;
-    }
-    .stApp { background-color: var(--bg); color: white; font-family: 'Poppins', sans-serif; }
-    #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
-    
-    /* TARJETAS ESTILO GLASSMORPHISM */
-    .stDataFrame, .stForm, div[data-testid="stExpander"], .css-1r6slb0 {
-        background: var(--card-bg) !important;
-        border-radius: 20px !important;
-        padding: 20px !important;
-        border: 1px solid rgba(255,255,255,0.1) !important;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
+        --blue: #4D79FF;
+        --yellow: #FFD93D;
+        --green: #6BCB77;
+        --red: #FF6B6B;
+        --bg: #F4F7F6;
+        --card-bg: #FFFFFF;
     }
 
-    /* BOTONES */
-    .stButton > button {
-        background: linear-gradient(45deg, #f1c40f, #f39c12);
-        color: #000;
-        border-radius: 12px;
-        font-weight: 800;
-        width: 100%;
-        transition: 0.2s;
+    /* FONDO GENERAL */
+    .stApp {
+        background-color: var(--bg);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    /* ESCONDER ELEMENTOS DE STREAMLIT */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+
+    /* ESTILO DE TARJETAS (CARDS) */
+    .css-1r6slb0, .stDataFrame, .stForm, div[data-testid="stExpander"] {
+        background: var(--card-bg);
+        border-radius: 24px;
+        padding: 20px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.05);
         border: none;
+        margin-bottom: 15px;
     }
-    .stButton > button:active { transform: scale(0.95); }
 
-    /* INPUTS */
-    .stTextInput > div > div > input, .stTextArea > div > div > textarea {
-        border-radius: 12px;
-        background: rgba(0,0,0,0.3);
-        border: 1px solid rgba(255,255,255,0.2);
+    /* BOTONES PRINCIPALES (PILLS) */
+    .stButton > button {
+        background: linear-gradient(90deg, var(--blue), #3a60d0);
         color: white;
+        border-radius: 50px;
+        border: none;
+        padding: 12px 25px;
+        font-weight: 700;
+        font-size: 1rem;
+        width: 100%;
+        box-shadow: 0 4px 15px rgba(77, 121, 255, 0.3);
+        transition: all 0.2s;
+    }
+    .stButton > button:active {
+        transform: scale(0.95);
+    }
+
+    /* BOTONES DE NAVEGACIÓN INFERIOR */
+    div.row-widget.stButton {
+        text-align: center;
     }
     
-    h1, h2, h3 { color: var(--accent); font-weight: 800; text-align: center; }
+    /* INPUTS DE TEXTO */
+    .stTextInput > div > div > input, .stTextArea > div > div > textarea {
+        border-radius: 15px;
+        border: 2px solid #EEE;
+        padding: 10px;
+    }
+    .stTextInput > div > div > input:focus {
+        border-color: var(--blue);
+    }
+
+    /* AVATAR GRANDE */
+    .avatar-circle {
+        font-size: 60px;
+        background: #EFF3FF;
+        width: 110px;
+        height: 110px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 10px auto;
+        border: 4px solid var(--blue);
+        box-shadow: 0 5px 15px rgba(77, 121, 255, 0.2);
+    }
+
+    /* TEXTOS */
+    h1 {
+        color: #2D3436;
+        font-weight: 800;
+        text-align: center;
+        font-size: 1.8rem;
+    }
+    h3 {
+        color: var(--blue);
+        font-size: 1.1rem;
+        font-weight: 700;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# ==========================================
-# BLOQUE 3: BASE DE DATOS SEGURA (FIREBASE)
-# ==========================================
-# Sustituimos los archivos CSV[cite: 2] por Firestore para proteger los datos de accesos externos.
+# --- 3. GESTIÓN DE DATOS (DATABASE) ---
+FILE_ELEVES = 'eleves.csv'
+FILE_PROPOSALS = 'propositions.csv'
 
-@st.cache_resource
-def init_firebase():
-    """Inicializa la conexión segura con Firebase."""
-    if not firebase_admin._apps:
-        # En producción (Streamlit Cloud), usa st.secrets["firebase"]
-        # Aquí usamos un bloque try-except para que no colapse si aún no has puesto las claves.
-        try:
-            cred_dict = dict(st.secrets["firebase"])
-            cred = credentials.Certificate(cred_dict)
-            firebase_admin.initialize_app(cred)
-        except:
-            st.warning("⚠️ Firebase no está configurado en st.secrets. Usando modo de prueba temporal.")
-            return None
-    return firestore.client()
+def init_db():
+    if not os.path.exists(FILE_ELEVES):
+        pd.DataFrame(columns=['Pseudo', 'Avatar', 'Forces', 'Faiblesse', 'Slogan', 'TeamID']).to_csv(FILE_ELEVES, index=False)
+    if not os.path.exists(FILE_PROPOSALS):
+        pd.DataFrame(columns=['Demandeur', 'Partenaire', 'Justification', 'Votes_Pour', 'Votes_Contre', 'Status']).to_csv(FILE_PROPOSALS, index=False)
 
-db = init_firebase()
+def load_data(file): return pd.read_csv(file)
+def save_data(df, file): df.to_csv(file, index=False)
 
-def save_dragon_data(pseudo, data):
-    """Guarda o actualiza los datos del dragón en la nube."""
-    if db:
-        db.collection('dragones').document(pseudo).set(data, merge=True)
-    else:
-        st.session_state['temp_db'][pseudo] = data # Fallback local
+init_db()
+df_eleves = load_data(FILE_ELEVES)
+df_proposals = load_data(FILE_PROPOSALS)
 
-def get_dragon_data(pseudo):
-    """Recupera los datos del dragón."""
-    if db:
-        doc = db.collection('dragones').document(pseudo).get()
-        return doc.to_dict() if doc.exists else None
-    return st.session_state['temp_db'].get(pseudo)
-
-if 'temp_db' not in st.session_state:
-    st.session_state['temp_db'] = {}
-
-# ==========================================
-# BLOQUE 4: LÓGICA DE EVOLUCIÓN Y CARNET
-# ==========================================
-EVOLUTION_STAGES = [
-    {"max_xp": 100, "name": "Œuf", "emoji": "🥚"},
-    {"max_xp": 300, "name": "Bébé", "emoji": "🦎"},
-    {"max_xp": 600, "name": "Adolescent", "emoji": "🦖"},
-    {"max_xp": 1000, "name": "Adulte", "emoji": "🐲"},
-    {"max_xp": 99999, "name": "Légendaire", "emoji": "🐉"}
-]
-
-def get_evolution_stage(xp):
-    for stage in EVOLUTION_STAGES:
-        if xp < stage["max_xp"]:
-            return stage
-    return EVOLUTION_STAGES[-1]
-
-# Reutilizamos tu generador de carnet modificándolo para el Dragón[cite: 2]
-def create_badge(pseudo, element, stage):
+# --- 4. FUNCIÓN GENERADOR DE CARNET (BADGE) ---
+def create_badge(pseudo, avatar, role="Athlète"):
+    # Crear lienzo blanco
     W, H = 400, 600
-    img = Image.new('RGB', (W, H), color='#1a1a2e')
+    img = Image.new('RGB', (W, H), color='white')
     d = ImageDraw.Draw(img)
     
-    # Colores por elemento
-    colors = {"Eau": "#3498db", "Feu": "#e74c3c", "Plante": "#2ecc71"}
-    bg_color = colors.get(element, "#f1c40f")
+    # Fondo Colorido (Cabecera)
+    d.rectangle([(0, 0), (W, 150)], fill='#4D79FF')
     
-    d.rectangle([(0, 0), (W, 150)], fill=bg_color)
-    try: font = ImageFont.truetype("arial.ttf", 40)
-    except: font = ImageFont.load_default()
+    # Texto Título (Usamos fuente por defecto para evitar errores de servidor)
+    try:
+        font_large = ImageFont.truetype("arial.ttf", 40) # Intenta Arial
+    except:
+        font_large = ImageFont.load_default() # Fallback
+
+    d.text((20, 50), "JO AVENIR 2026", fill="white", font=font_large)
+    d.text((20, 100), "ACCREDITATION", fill="#FFD93D", font=font_large)
     
-    d.text((20, 50), "DRESSEUR ODD", fill="white", font=font)
-    d.text((150, 200), stage['emoji'], fill="white", font=font)
-    d.text((50, 300), pseudo, fill="white", font=font)
+    # Avatar (Simulado con texto)
+    d.text((150, 200), avatar, fill="black", font=font_large) # Emoji
     
+    # Datos Usuario
+    d.text((50, 300), f"Nom: {pseudo}", fill="black", font=font_large)
+    d.text((50, 350), f"Rôle: {role}", fill="gray", font=font_large)
+    
+    # Generar QR
     qr = qrcode.QRCode(box_size=4, border=1)
-    qr.add_data(f"Dragon:{pseudo}|Element:{element}")
+    qr.add_data(f"ID:{pseudo}|ROLE:{role}")
     qr.make(fit=True)
-    img.paste(qr.make_image(fill_color="black", back_color="white"), (100, 420))
+    qr_img = qr.make_image(fill_color="black", back_color="white")
     
+    # Pegar QR en la imagen
+    img.paste(qr_img, (100, 420))
+    
+    # Convertir a bytes para descargar
     img_byte_arr = io.BytesIO()
     img.save(img_byte_arr, format='PNG')
     return img_byte_arr.getvalue()
 
-# ==========================================
-# BLOQUE 5: NAVEGACIÓN Y ESTADO
-# ==========================================
-# Mantenemos tu lógica de enrutamiento[cite: 2]
+# --- 5. NAVEGACIÓN ---
 if 'page' not in st.session_state: st.session_state['page'] = 'profile'
-if 'current_user' not in st.session_state: st.session_state['current_user'] = None
 
 def nav(page_name):
     st.session_state['page'] = page_name
     st.rerun()
 
-def add_xp(amount):
-    if st.session_state['current_user']:
-        data = get_dragon_data(st.session_state['current_user'])
-        data['xp'] += amount
-        save_dragon_data(st.session_state['current_user'], data)
-        st.toast(f"¡+{amount} XP ganada!", icon="✨")
-
 # ==========================================
-# BLOQUE 6: VISTAS (SCREENS)
+#              PÁGINAS DE LA APP
 # ==========================================
 
-# --- PÁGINA 1: INCUBADORA (ELECCIÓN DEL DRAGÓN) ---
+# --- PÁGINA 1: PERFIL ---
 if st.session_state['page'] == 'profile':
-    st.markdown("<h1>L'ÉCLOSERIE 🥚</h1>", unsafe_allow_html=True)
-    st.write("<p style='text-align:center;'>Choisis l'œuf de ton futur dragon.</p>", unsafe_allow_html=True)
+    st.markdown("<h1>👤 Mon Profil</h1>", unsafe_allow_html=True)
     
-    with st.form("dragon_creation"):
-        pseudo = st.text_input("Ton Pseudo (Tu nombre de entrenador):")
+    with st.form("profile_maker"):
+        # Avatar Selector
+        st.markdown("<div class='avatar-circle'>😎</div>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align:center; color:#888;'>Choisis ton visage</p>", unsafe_allow_html=True)
         
-        st.markdown("### Élément du Dragon")
-        element = st.radio("Sélectionne ton type:", ["💧 Eau", "🔥 Feu", "🌿 Plante"], horizontal=True)
+        c1, c2 = st.columns([1,3])
+        with c1:
+            avatar = st.selectbox("Emoji", ["🦊", "🦁", "🦄", "⚡", "👽", "🤖", "🔥", "🚀"])
+        with c2:
+            pseudo = st.text_input("Ton Bledger (Pseudo)", placeholder="Ex: Flash_Gordon")
         
-        if st.form_submit_button("Éclore l'Œuf (Empezar)"):
-            if pseudo:
-                elem_clean = element.split(" ")[1] # Extrae Eau, Feu o Plante
+        st.markdown("### ⚡ Mes Super-Pouvoirs (Max 2)")
+        forces = st.multiselect("Forces", 
+                              ["Vitesse 🏃‍♂️", "Force 💪", "Stratégie 🧠", "Endurance 🔋", "Mental 🧘", "Organisation 📋"],
+                              label_visibility="collapsed")
+        
+        st.markdown("### 🐢 Mon Point Faible")
+        faiblesse = st.text_input("Weakness", placeholder="Ex: Je suis désordonné...", label_visibility="collapsed")
+        
+        if st.form_submit_button("💾 Sauvegarder"):
+            if pseudo and len(forces) > 0:
+                new_user = pd.DataFrame([[pseudo, avatar, ", ".join(forces), faiblesse, "Ready", "None"]], 
+                                      columns=['Pseudo', 'Avatar', 'Forces', 'Faiblesse', 'Slogan', 'TeamID'])
+                df_eleves = pd.concat([df_eleves, new_user], ignore_index=True)
+                save_data(df_eleves, FILE_ELEVES)
+                st.success("Profil Créé ! Va au Marché.")
+            else:
+                st.error("Remplis tout !")
+
+# --- PÁGINA 2: MERCADO (MATCHING) ---
+elif st.session_state['page'] == 'market':
+    st.markdown("<h1>🤝 Le Marché</h1>", unsafe_allow_html=True)
+    st.info("💡 Cherche quelqu'un qui complète tes faiblesses.")
+
+    if df_eleves.empty:
+        st.warning("Personne ici... Crée ton profil d'abord !")
+    else:
+        for i, row in df_eleves.iterrows():
+            with st.container():
+                c1, c2 = st.columns([1, 4])
+                with c1:
+                    st.markdown(f"<div style='font-size:40px;'>{row['Avatar']}</div>", unsafe_allow_html=True)
+                with c2:
+                    st.markdown(f"**{row['Pseudo']}**")
+                    st.caption(f"⚡ {row['Forces']} | 🐢 {row['Faiblesse']}")
                 
-                # Comprobar si existe en la BD
-                existing_data = get_dragon_data(pseudo)
-                if not existing_data:
-                    new_data = {
-                        "pseudo": pseudo,
-                        "element": elem_clean,
-                        "xp": 0,
-                        "journal": []
-                    }
-                    save_dragon_data(pseudo, new_data)
+                # Expandible para proponer alianza
+                with st.expander(f"💌 Faire équipe avec {row['Pseudo']}"):
+                    with st.form(f"form_{i}"):
+                        me = st.text_input("Ton Pseudo", placeholder="Qui es-tu ?")
+                        
+                        # --- DUA SCAFFOLDING (AYUDA DE TEXTO) ---
+                        st.markdown("**Pourquoi ce choix ? (Aide-toi de ces phrases) :**")
+                        st.caption("• *Je te choisis parce que tu es fort en...*")
+                        st.caption("• *Je suis rapide mais tu es organisé...*")
+                        
+                        justif = st.text_area("Ta justification", placeholder="Écris ici...")
+                        
+                        if st.form_submit_button("🚀 Envoyer Proposition"):
+                            if len(justif) > 10:
+                                new_p = pd.DataFrame([[me, row['Pseudo'], justif, 0, 0, "Pending"]],
+                                                   columns=['Demandeur', 'Partenaire', 'Justification', 'Votes_Pour', 'Votes_Contre', 'Status'])
+                                df_proposals = pd.concat([df_proposals, new_p], ignore_index=True)
+                                save_data(df_proposals, FILE_PROPOSALS)
+                                st.success("Envoyé au Conseil !")
+                            else:
+                                st.error("Trop court ! Explique mieux.")
+
+# --- PÁGINA 3: CONSEJO (VOTACIÓN) ---
+elif st.session_state['page'] == 'council':
+    st.markdown("<h1>⚖️ Le Conseil</h1>", unsafe_allow_html=True)
+    
+    pending = df_proposals[df_proposals['Status'] == 'Pending']
+    
+    if pending.empty:
+        st.info("Rien à voter pour l'instant.")
+    else:
+        for i, row in pending.iterrows():
+            st.markdown(f"### ⚔️ Duo: {row['Demandeur']} + {row['Partenaire']}")
+            st.info(f"🗣️ \"{row['Justification']}\"")
+            
+            c1, c2 = st.columns(2)
+            if c1.button(f"👍 Validé ({row['Votes_Pour']})", key=f"y{i}"):
+                df_proposals.at[i, 'Votes_Pour'] += 1
+                # Lógica simple: con 3 votos se aprueba
+                if df_proposals.at[i, 'Votes_Pour'] >= 3:
+                    df_proposals.at[i, 'Status'] = 'Approved'
+                    st.balloons()
+                save_data(df_proposals, FILE_PROPOSALS)
+                st.rerun()
                 
-                st.session_state['current_user'] = pseudo
-                nav('home')
-            else:
-                st.error("¡Debes introducir un nombre!")
+            if c2.button(f"👎 Revoir ({row['Votes_Contre']})", key=f"n{i}"):
+                df_proposals.at[i, 'Votes_Contre'] += 1
+                save_data(df_proposals, FILE_PROPOSALS)
+                st.rerun()
+            st.markdown("---")
 
-# --- PÁGINA 2: EL DRAGÓN (DASHBOARD) ---
-elif st.session_state['page'] == 'home':
-    if not st.session_state['current_user']: nav('profile')
+# --- PÁGINA 4: MI CARNET (BADGE) ---
+elif st.session_state['page'] == 'badge':
+    st.markdown("<h1>🆔 Mon Passeport</h1>", unsafe_allow_html=True)
+    st.write("Télécharge ton accréditation officielle pour la Gymkhana.")
     
-    user_data = get_dragon_data(st.session_state['current_user'])
-    stage = get_evolution_stage(user_data['xp'])
+    user_check = st.text_input("Vérifie ton pseudo pour générer le badge:")
     
-    st.markdown(f"<h2>{user_data['pseudo']}</h2>", unsafe_allow_html=True)
-    st.markdown(f"<p style='text-align:center;'><span style='background:#333; padding:5px 10px; border-radius:10px;'>Dragon d'{user_data['element']}</span></p>", unsafe_allow_html=True)
-    
-    with st.container():
-        st.markdown(f"<div style='font-size: 8rem; text-align: center; margin: 20px 0;'>{stage['emoji']}</div>", unsafe_allow_html=True)
-        st.markdown(f"<h4 style='text-align:center; color:#ccc;'>STADE: {stage['name'].upper()}</h4>", unsafe_allow_html=True)
-        
-        # Barra de progreso
-        pct = min(user_data['xp'] / stage['max_xp'], 1.0)
-        st.progress(pct)
-        st.caption(f"<div style='text-align:center;'>{user_data['xp']} / {stage['max_xp']} XP</div>", unsafe_allow_html=True)
-
-    st.markdown("---")
-    badge_img = create_badge(user_data['pseudo'], user_data['element'], stage)
-    st.download_button("⬇️ Télécharger Passeport", badge_img, file_name="dragon_passport.png", mime="image/png")
-
-# --- PÁGINA 3: MISIONES (CÓDIGOS Y NORMALES) ---
-elif st.session_state['page'] == 'missions':
-    st.markdown("<h1>L'ARÈNE ⚔️</h1>", unsafe_allow_html=True)
-    
-    # Misiones por Código (Mundo Real)[cite: 1]
-    with st.expander("🔑 Missions Secrètes (Codes)", expanded=True):
-        st.write("Introduit le code donné par le professeur.")
-        secret_code = st.text_input("Code Secret:", key="code_input").upper()
-        if st.button("Valider le Code"):
-            # Códigos predefinidos[cite: 1]
-            valid_codes = {"ODD-74A": 100, "RELAIS-100": 100, "BIOS-50": 50}
-            if secret_code in valid_codes:
-                add_xp(valid_codes[secret_code])
-                st.success("Code Validé !")
-            else:
-                st.error("Code Incorrect.")
-
-    # Misiones Normales (Entrenamiento)
-    with st.expander("🧠 Entraînement Quotidien"):
-        q1 = st.radio("Traduis 'Medio Ambiente':", ["La Nature", "L'Environnement", "Le Climat"], index=None)
-        if st.button("Vérifier (Vocabulaire)"):
-            if q1 == "L'Environnement":
-                st.success("Correct!")
-                add_xp(20)
-            else:
-                st.error("Faux.")
-
-# --- PÁGINA 4: EL DIARIO (FORTALEZAS Y DEBILIDADES) ---
-elif st.session_state['page'] == 'journal':
-    st.markdown("<h1>LE GRIMOIRE 📖</h1>", unsafe_allow_html=True)
-    st.info("Note ici tes forces et tes faiblesses pour faire grandir ton dragon mentalement.")
-    
-    with st.form("journal_entry"):
-        st.markdown("### Mon Évaluation")
-        forces = st.text_area("🌟 Tes points forts aujourd'hui (Puntos fuertes):", placeholder="Ex: J'ai bien compris le vocabulaire...")
-        faiblesses = st.text_area("🐢 Ce que tu dois améliorer (Puntos flojos):", placeholder="Ex: Je dois réviser les verbes...")
-        
-        if st.form_submit_button("Sauvegarder (+30 XP)"):
-            if forces and faiblesses:
-                data = get_dragon_data(st.session_state['current_user'])
-                # Guardamos la entrada en la base de datos
-                data['journal'].append({"forces": forces, "faiblesses": faiblesses})
-                data['xp'] += 30
-                save_dragon_data(st.session_state['current_user'], data)
-                st.success("Journal mis à jour !")
-                st.balloons()
-            else:
-                st.error("Remplis les deux champs.")
+    if user_check:
+        # Buscar usuario
+        user_data = df_eleves[df_eleves['Pseudo'] == user_check]
+        if not user_data.empty:
+            avatar = user_data.iloc[0]['Avatar']
+            
+            # Generar imagen
+            badge_bytes = create_badge(user_check, avatar)
+            
+            # Mostrar imagen
+            st.image(badge_bytes, caption="Ton Badge Officiel")
+            
+            # Botón descargar
+            st.download_button(
+                label="⬇️ Télécharger Image (PNG)",
+                data=badge_bytes,
+                file_name=f"badge_{user_check}.png",
+                mime="image/png"
+            )
+        else:
+            st.error("Pseudo introuvable.")
 
 # ==========================================
-# BLOQUE 7: MENÚ INFERIOR (DOCK)
+#        BARRA DE NAVEGACIÓN INFERIOR
 # ==========================================
-st.write("<br><br><br>", unsafe_allow_html=True) # Espacio inferior
 st.markdown("---")
-c1, c2, c3, c4 = st.columns(4)
+# Usamos columnas para simular la barra fija abajo
+nav1, nav2, nav3, nav4 = st.columns(4)
 
-# Mantenemos tu sistema de navegación por botones[cite: 2]
-with c1:
-    if st.button("🐉\nDragon"): nav('home')
-with c2:
-    if st.button("⚔️\nMissions"): nav('missions')
-with c3:
-    if st.button("📖\nJournal"): nav('journal')
-with c4:
-    if st.button("⚙️\nProfil"): nav('profile')
+with nav1:
+    if st.button("👤\nProfil"): nav('profile')
+with nav2:
+    if st.button("🤝\nMarché"): nav('market')
+with nav3:
+    if st.button("⚖️\nConseil"): nav('council')
+with nav4:
+    if st.button("🆔\nBadge"): nav('badge')
