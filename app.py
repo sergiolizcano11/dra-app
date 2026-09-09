@@ -150,3 +150,70 @@ elif st.session_state['view'] == 'tamagotchi':
     if st.button("Salir"):
         st.session_state['user'] = None
         nav('login')
+import streamlit as st
+
+# ==========================================
+# 1. ESTADO GLOBAL Y RUTAS (ROUTING)
+# ==========================================
+# Define la página inicial si no existe
+if 'page' not in st.session_state: 
+    st.session_state['page'] = 'home' 
+
+def nav(page_name): 
+    """Función para cambiar de vista y recargar la app."""
+    st.session_state['page'] = page_name
+    st.rerun() #[cite: 2]
+
+# ==========================================
+# 2. INYECCIÓN CSS PARA EL ESTILO "APP"
+# ==========================================
+st.markdown("""
+<style>
+    /* Ocultar interfaz de navegador nativa de Streamlit */
+    #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;} /* */
+    
+    /* Estilo de los botones (Pills) para que parezcan de App Móvil */
+    .stButton > button {
+        background: linear-gradient(90deg, #4D79FF, #3a60d0);
+        color: white;
+        border-radius: 20px; /* Bordes redondeados modernos */
+        border: none;
+        padding: 10px 5px;
+        font-weight: 700;
+        width: 100%;
+        box-shadow: 0 4px 10px rgba(77, 121, 255, 0.2);
+        transition: all 0.2s; /* */
+    }
+    
+    /* Efecto al hacer clic (Active) */
+    .stButton > button:active {
+        transform: scale(0.95); /*[cite: 1] */
+    }
+    
+    /* Centrar el texto e iconos en los botones del dock */
+    div.row-widget.stButton {
+        text-align: center; /*[cite: 1] */
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Aquí iría la lógica de tus vistas (Ej: if st.session_state['page'] == 'home': ...)
+
+# ==========================================
+# 3. BARRA DE NAVEGACIÓN INFERIOR (DOCK)
+# ==========================================
+# Añadimos saltos de línea para que el contenido no quede oculto detrás del menú
+st.write("<br><br><br><br>", unsafe_allow_html=True) # Espacio inferior[cite: 1]
+st.markdown("---")
+
+# Usamos 4 columnas para simular la barra fija abajo[cite: 1]
+nav1, nav2, nav3, nav4 = st.columns(4)
+
+with nav1:
+    if st.button("🐉\nDragón"): nav('home') #[cite: 1]
+with nav2:
+    if st.button("⚔️\nMisiones"): nav('missions') #[cite: 1]
+with nav3:
+    if st.button("📖\nDiario"): nav('journal') #[cite: 1]
+with nav4:
+    if st.button("🏆\nTrofeos"): nav('trophies') #[cite: 1]
