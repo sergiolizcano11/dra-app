@@ -264,18 +264,19 @@ elif st.session_state['page'] == 'journal':
         if st.form_submit_button("Écrire dans le Grimoire (+10 XP)"):
             if reflexion:
                 new_entry = pd.DataFrame([[st.session_state['current_user'], datetime.now().strftime("%d/%m %H:%M"), reflexion]], columns=['Propietario', 'Date', 'Reflexion'])
-                global df_journal
+                
+                # AQUÍ ESTABA EL ERROR: Hemos eliminado la línea "global df_journal"
                 df_journal = pd.concat([new_entry, df_journal], ignore_index=True)
                 save_data(df_journal, FILE_JOURNAL)
                 ganar_xp(10)
-            else: st.error("Le parchemin est vide.")
+            else: 
+                st.error("Le parchemin est vide.")
     st.markdown("</div>", unsafe_allow_html=True)
     
     # Mostrar el historial del grimorio
     mis_entradas = df_journal[df_journal['Propietario'] == st.session_state['current_user']]
     for i, row in mis_entradas.iterrows():
         st.markdown(f"<div class='solid-panel' style='padding:15px;'><small style='color:#8B0000;'>{row['Date']}</small><br><i>{row['Reflexion']}</i></div>", unsafe_allow_html=True)
-
 # ==========================================
 # MENU INFERIOR NATIVO DE STREAMLIT
 # ==========================================
