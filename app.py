@@ -89,6 +89,36 @@ st.markdown("""
     .stButton > button:active { transform: translateY(2px); }
 
     .dragon-emoji { font-size: 8rem; text-align: center; display: block; margin: 20px 0; animation: float 3s infinite ease-in-out; }
+    
+    /* --- FORMA DE HUEVO MÁGICO CON TEXTURAS REALES --- */
+    .dragon-egg {
+        width: 140px;
+        height: 190px;
+        margin: 20px auto;
+        /* La fórmula matemática en CSS para hacer forma de huevo */
+        border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+        background-size: cover;
+        background-position: center;
+        border: 4px solid var(--accent);
+        animation: float 3s infinite ease-in-out;
+    }
+    
+    /* Huevo de Fuego (Lava pura) */
+    .egg-feu { 
+        background-image: url('https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?q=80&w=800&auto=format&fit=crop'); 
+        box-shadow: inset -15px -15px 30px rgba(0,0,0,0.8), 0 0 35px #ff4500; 
+    }
+    /* Huevo de Agua (Remolinos profundos) */
+    .egg-eau { 
+        background-image: url('https://images.unsplash.com/photo-1548268770-66184a21657e?q=80&w=800&auto=format&fit=crop'); 
+        box-shadow: inset -15px -15px 30px rgba(0,0,0,0.8), 0 0 35px #00bfff; 
+    }
+    /* Huevo de Planta (Raíces y musgo) */
+    .egg-plante { 
+        background-image: url('https://images.unsplash.com/photo-1533038590840-1cde6e668a91?q=80&w=800&auto=format&fit=crop'); 
+        box-shadow: inset -15px -15px 30px rgba(0,0,0,0.8), 0 0 35px #32cd32; 
+    }
+
     @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
     
     .xp-container { background: #1a1a1a; border-radius: 10px; height: 25px; position: relative; border: 2px solid var(--accent); margin-top: 15px;}
@@ -119,16 +149,16 @@ init_db()
 df_dragones = load_data(FILE_DRAGONS)
 df_journal = load_data(FILE_JOURNAL)
 
-# --- 4. LÓGICA DE EVOLUCIÓN (HUEVOS PERSONALIZADOS) ---
+# --- 4. LÓGICA DE EVOLUCIÓN (HUEVOS PERSONALIZADOS CON HTML) ---
 def get_dragon_visual(xp, elemento):
     if xp < 100:
-        if "Feu" in elemento: return "🌋", "L'Œuf de Lave"
-        elif "Eau" in elemento: return "🌀", "L'Œuf des Courants"
-        else: return "🌿", "L'Œuf des Racines"
-    elif xp < 300: return "🦎", "Bébé Dragon"
-    elif xp < 600: return "🦖", "Jeune Dragon"
-    elif xp < 1000: return "🐲", "Dragon Adulte"
-    else: return "🐉", "Dragon Légendaire"
+        if "Feu" in elemento: return "<div class='dragon-egg egg-feu'></div>", "L'Œuf de Lave"
+        elif "Eau" in elemento: return "<div class='dragon-egg egg-eau'></div>", "L'Œuf des Courants"
+        else: return "<div class='dragon-egg egg-plante'></div>", "L'Œuf des Racines"
+    elif xp < 300: return "<div class='dragon-emoji'>🦎</div>", "Bébé Dragon"
+    elif xp < 600: return "<div class='dragon-emoji'>🦖</div>", "Jeune Dragon"
+    elif xp < 1000: return "<div class='dragon-emoji'>🐲</div>", "Dragon Adulte"
+    else: return "<div class='dragon-emoji'>🐉</div>", "Dragon Légendaire"
 
 def get_max_xp(xp):
     if xp < 100: return 100
@@ -197,7 +227,9 @@ elif st.session_state['page'] == 'home':
     st.markdown(f"<h2 style='text-align:center; color:#2c1e16;'>{mi_dragon['NombreDragon']}</h2>", unsafe_allow_html=True)
     st.markdown(f"<p style='text-align:center;'><strong>Élément:</strong> {mi_dragon['Elemento']}</p>", unsafe_allow_html=True)
     
-    st.markdown(f"<div class='dragon-emoji'>{emoji}</div>", unsafe_allow_html=True)
+    # Renderizamos la imagen HTML directamente para que se vea el Huevo mágico CSS
+    st.markdown(f"{emoji}", unsafe_allow_html=True)
+    
     st.markdown(f"<h3 style='text-align:center;'>Stade: {nombre_fase}</h3>", unsafe_allow_html=True)
     
     pct = min((xp_actual / max_xp) * 100, 100)
@@ -220,7 +252,7 @@ elif st.session_state['page'] == 'missions':
             if codigo == "DRAGON": ganar_xp(100)
             else: st.error("Code invalide.")
             
-    # 2. Las 10 Misiones Arcade[cite: 1]
+    # 2. Las 10 Misiones Arcade
     st.markdown("### ⚔️ Entraînement Quotidien")
     
     with st.expander("🔢 123 Les Nombres"):
@@ -265,7 +297,6 @@ elif st.session_state['page'] == 'journal':
             if reflexion:
                 new_entry = pd.DataFrame([[st.session_state['current_user'], datetime.now().strftime("%d/%m %H:%M"), reflexion]], columns=['Propietario', 'Date', 'Reflexion'])
                 
-                # AQUÍ ESTABA EL ERROR: Hemos eliminado la línea "global df_journal"
                 df_journal = pd.concat([new_entry, df_journal], ignore_index=True)
                 save_data(df_journal, FILE_JOURNAL)
                 ganar_xp(10)
@@ -277,6 +308,7 @@ elif st.session_state['page'] == 'journal':
     mis_entradas = df_journal[df_journal['Propietario'] == st.session_state['current_user']]
     for i, row in mis_entradas.iterrows():
         st.markdown(f"<div class='solid-panel' style='padding:15px;'><small style='color:#8B0000;'>{row['Date']}</small><br><i>{row['Reflexion']}</i></div>", unsafe_allow_html=True)
+
 # ==========================================
 # MENU INFERIOR NATIVO DE STREAMLIT
 # ==========================================
