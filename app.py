@@ -1,487 +1,294 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import pandas as pd
-from fpdf import FPDF
-from gtts import gTTS
-from st_audiorec import st_audiorec
-import io
-import qrcode
-import tempfile
 import os
+import qrcode
+from PIL import Image, ImageDraw, ImageFont
+import io
+import firebase_admin
+from firebase_admin import credentials, firestore
+import json
 
-# --- CONFIGURACIÓN DE PÁGINA ---
+# ==========================================
+# BLOQUE 1: CONFIGURACIÓN VISUAL Y APP
+# ==========================================
 st.set_page_config(
-    page_title="Dragon Évolution : L'Alliance ODD",
-    layout="wide",
-    initial_sidebar_state="collapsed",
-    page_icon="🐉"
+    page_title="Dragon Évolution",
+    page_icon="🐉",
+    layout="centered",
+    initial_sidebar_state="collapsed"
 )
 
-# --- FUNCIONES BACKEND (ZONA PROFESOR & DUA) ---
-def create_dragon_diploma(name, element, trait):
-    """Genera un diploma PDF del dragón (Gamificación tangible)."""
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_fill_color(240, 245, 250)
-    pdf.rect(0, 0, 210, 297, 'F')
-    pdf.set_draw_color(40, 40, 80)
-    pdf.set_line_width(2)
-    pdf.rect(15, 15, 180, 267)
-    
-    pdf.set_font("Arial", 'B', 24)
-    pdf.set_text_color(0, 0, 0)
-    pdf.set_xy(0, 30)
-    pdf.cell(210, 15, "CERTIFICAT DE DRESSEUR ODD", 0, 1, 'C')
-    
-    pdf.set_font("Arial", 'B', 35)
-    if element == 'Feu': pdf.set_text_color(200, 50, 50)
-    elif element == 'Eau': pdf.set_text_color(0, 100, 200)
-    else: pdf.set_text_color(34, 139, 34)
-    pdf.cell(210, 25, name.upper(), 0, 1, 'C')
-    
-    pdf.set_font("Arial", 'I', 18)
-    pdf.set_text_color(50, 50, 50)
-    pdf.cell(210, 10, f"Élément : Dragon d'{element}", 0, 1, 'C')
-    pdf.cell(210, 10, f"ADN / Atout : {trait}", 0, 1, 'C')
-    
-    # Código QR de Validación del Profesor[cite: 2]
-    qr = qrcode.make(f"Dresseur: {name} | Element: {element} | Agenda 2030")
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
-        qr.save(tmpfile.name)
-        pdf.image(tmpfile.name, x=75, y=120, w=60)
-    os.remove(tmpfile.name)
-    
-    return pdf.output(dest='S').encode('latin-1')
-
-# --- BARRA LATERAL (HERRAMIENTAS DUA & ADMIN) ---
-with st.sidebar:
-    st.markdown("<h1 style='text-align: center;'>🐉</h1>", unsafe_allow_html=True)
-    st.title("Outils DUA & Admin")
-    
-    # DUA: Text-to-Speech (Lecteur Immersif)[cite: 1, 2]
-    with st.expander("🗣️ Lecteur (TTS)"):
-        st.caption("Écrivez pour écouter en français.")
-        text_to_speak = st.text_input("Texte:", "Bienvenue dresseur !")
-        if st.button("Écouter 🔊"):
-            try:
-                tts = gTTS(text=text_to_speak, lang='fr')
-                audio_bytes = io.BytesIO()
-                tts.write_to_fp(audio_bytes)
-                st.audio(audio_bytes, format='audio/mp3')
-            except:
-                st.error("Erreur audio.")
-
-    # DUA: Grabadora (Micro d'Or)[cite: 1, 2]
-    with st.expander("🎙️ Micro d'Or (Enregistrement)"):
-        st.caption("Entraînement oral ou réflexion vocale.")
-        wav_audio_data = st_audiorec()
-        if wav_audio_data is not None:
-            st.audio(wav_audio_data, format='audio/wav')
-            st.success("Audio enregistré ! Tu peux le sauvegarder.")
-
-    st.divider()
-    
-    # Generador de Diplomas[cite: 2]
-    st.markdown("### 🖨️ Diplôme Officiel")
-    d_name = st.text_input("Nom du Dresseur (Élève):", "Apprenti")
-    d_element = st.selectbox("Élément du Dragon:", ["Eau", "Feu", "Plante"])
-    d_trait = st.selectbox("Atout principal:", ["Force", "Sagesse", "Vitesse", "Créativité"])
-    if st.button("📄 Générer Diplôme PDF"):
-        pdf_data = create_dragon_diploma(d_name, d_element, d_trait)
-        st.download_button("📥 Télécharger le PDF", pdf_data, file_name="diplome_dragon.pdf", mime="application/pdf")
-
-# --- CSS BASE PARA OCULTAR INTERFAZ DE STREAMLIT ---
+# ==========================================
+# BLOQUE 2: CSS AVANZADO (DISEÑO GEN Z)
+# ==========================================
+# Implementación de estética Gen Z con bordes redondeados y diseño limpio[cite: 1]
 st.markdown("""
-    <style>
-        #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
-        .block-container {padding: 0 !important; margin: 0 !important; max-width: 100%;}
-        iframe {height: 100vh !important; width: 100vw !important; border: none;}
-        [data-testid="stSidebar"] { background-color: #f4f6f9; border-right: 1px solid #ddd; }
-    </style>
+<style>
+    :root {
+        --bg: #1a1a2e;
+        --card-bg: rgba(25, 30, 45, 0.95);
+        --accent: #f1c40f;
+        --water: #3498db;
+        --fire: #e74c3c;
+        --plant: #2ecc71;
+    }
+    .stApp { background-color: var(--bg); color: white; font-family: 'Poppins', sans-serif; }
+    #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
+    
+    /* TARJETAS ESTILO GLASSMORPHISM */
+    .stDataFrame, .stForm, div[data-testid="stExpander"], .css-1r6slb0 {
+        background: var(--card-bg) !important;
+        border-radius: 20px !important;
+        padding: 20px !important;
+        border: 1px solid rgba(255,255,255,0.1) !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
+    }
+
+    /* BOTONES */
+    .stButton > button {
+        background: linear-gradient(45deg, #f1c40f, #f39c12);
+        color: #000;
+        border-radius: 12px;
+        font-weight: 800;
+        width: 100%;
+        transition: 0.2s;
+        border: none;
+    }
+    .stButton > button:active { transform: scale(0.95); }
+
+    /* INPUTS */
+    .stTextInput > div > div > input, .stTextArea > div > div > textarea {
+        border-radius: 12px;
+        background: rgba(0,0,0,0.3);
+        border: 1px solid rgba(255,255,255,0.2);
+        color: white;
+    }
+    
+    h1, h2, h3 { color: var(--accent); font-weight: 800; text-align: center; }
+</style>
 """, unsafe_allow_html=True)
 
-# --- FRONTEND (HTML / JS / CSS) ---
-# Aquí reside el RPG, la evolución del dragón y el Diario de a Bordo restaurado[cite: 2].
-html_code = """
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+# ==========================================
+# BLOQUE 3: BASE DE DATOS SEGURA (FIREBASE)
+# ==========================================
+# Sustituimos los archivos CSV[cite: 2] por Firestore para proteger los datos de accesos externos.
 
-    <style>
-        :root {
-            --eau: #3498db; --feu: #e74c3c; --plante: #2ecc71;
-            --bg-dark: #1a1a2e; --panel-bg: rgba(25, 30, 45, 0.9);
-            --text-main: #f1f2f6; --accent: #f1c40f;
-            --font-game: 'Nunito', sans-serif;
-        }
-        body {
-            background-color: var(--bg-dark);
-            background-image: radial-gradient(circle at top right, #16213e, #0f3460);
-            color: var(--text-main); font-family: var(--font-game);
-            margin: 0; padding: 0; overflow-x: hidden; padding-bottom: 90px; min-height: 100vh;
-        }
+@st.cache_resource
+def init_firebase():
+    """Inicializa la conexión segura con Firebase."""
+    if not firebase_admin._apps:
+        # En producción (Streamlit Cloud), usa st.secrets["firebase"]
+        # Aquí usamos un bloque try-except para que no colapse si aún no has puesto las claves.
+        try:
+            cred_dict = dict(st.secrets["firebase"])
+            cred = credentials.Certificate(cred_dict)
+            firebase_admin.initialize_app(cred)
+        except:
+            st.warning("⚠️ Firebase no está configurado en st.secrets. Usando modo de prueba temporal.")
+            return None
+    return firestore.client()
+
+db = init_firebase()
+
+def save_dragon_data(pseudo, data):
+    """Guarda o actualiza los datos del dragón en la nube."""
+    if db:
+        db.collection('dragones').document(pseudo).set(data, merge=True)
+    else:
+        st.session_state['temp_db'][pseudo] = data # Fallback local
+
+def get_dragon_data(pseudo):
+    """Recupera los datos del dragón."""
+    if db:
+        doc = db.collection('dragones').document(pseudo).get()
+        return doc.to_dict() if doc.exists else None
+    return st.session_state['temp_db'].get(pseudo)
+
+if 'temp_db' not in st.session_state:
+    st.session_state['temp_db'] = {}
+
+# ==========================================
+# BLOQUE 4: LÓGICA DE EVOLUCIÓN Y CARNET
+# ==========================================
+EVOLUTION_STAGES = [
+    {"max_xp": 100, "name": "Œuf", "emoji": "🥚"},
+    {"max_xp": 300, "name": "Bébé", "emoji": "🦎"},
+    {"max_xp": 600, "name": "Adolescent", "emoji": "🦖"},
+    {"max_xp": 1000, "name": "Adulte", "emoji": "🐲"},
+    {"max_xp": 99999, "name": "Légendaire", "emoji": "🐉"}
+]
+
+def get_evolution_stage(xp):
+    for stage in EVOLUTION_STAGES:
+        if xp < stage["max_xp"]:
+            return stage
+    return EVOLUTION_STAGES[-1]
+
+# Reutilizamos tu generador de carnet modificándolo para el Dragón[cite: 2]
+def create_badge(pseudo, element, stage):
+    W, H = 400, 600
+    img = Image.new('RGB', (W, H), color='#1a1a2e')
+    d = ImageDraw.Draw(img)
+    
+    # Colores por elemento
+    colors = {"Eau": "#3498db", "Feu": "#e74c3c", "Plante": "#2ecc71"}
+    bg_color = colors.get(element, "#f1c40f")
+    
+    d.rectangle([(0, 0), (W, 150)], fill=bg_color)
+    try: font = ImageFont.truetype("arial.ttf", 40)
+    except: font = ImageFont.load_default()
+    
+    d.text((20, 50), "DRESSEUR ODD", fill="white", font=font)
+    d.text((150, 200), stage['emoji'], fill="white", font=font)
+    d.text((50, 300), pseudo, fill="white", font=font)
+    
+    qr = qrcode.QRCode(box_size=4, border=1)
+    qr.add_data(f"Dragon:{pseudo}|Element:{element}")
+    qr.make(fit=True)
+    img.paste(qr.make_image(fill_color="black", back_color="white"), (100, 420))
+    
+    img_byte_arr = io.BytesIO()
+    img.save(img_byte_arr, format='PNG')
+    return img_byte_arr.getvalue()
+
+# ==========================================
+# BLOQUE 5: NAVEGACIÓN Y ESTADO
+# ==========================================
+# Mantenemos tu lógica de enrutamiento[cite: 2]
+if 'page' not in st.session_state: st.session_state['page'] = 'profile'
+if 'current_user' not in st.session_state: st.session_state['current_user'] = None
+
+def nav(page_name):
+    st.session_state['page'] = page_name
+    st.rerun()
+
+def add_xp(amount):
+    if st.session_state['current_user']:
+        data = get_dragon_data(st.session_state['current_user'])
+        data['xp'] += amount
+        save_dragon_data(st.session_state['current_user'], data)
+        st.toast(f"¡+{amount} XP ganada!", icon="✨")
+
+# ==========================================
+# BLOQUE 6: VISTAS (SCREENS)
+# ==========================================
+
+# --- PÁGINA 1: INCUBADORA (ELECCIÓN DEL DRAGÓN) ---
+if st.session_state['page'] == 'profile':
+    st.markdown("<h1>L'ÉCLOSERIE 🥚</h1>", unsafe_allow_html=True)
+    st.write("<p style='text-align:center;'>Choisis l'œuf de ton futur dragon.</p>", unsafe_allow_html=True)
+    
+    with st.form("dragon_creation"):
+        pseudo = st.text_input("Ton Pseudo (Tu nombre de entrenador):")
         
-        /* CONTENEDORES Y PANELES */
-        .view { display: none; padding: 20px; animation: fadeIn 0.4s; }
-        .active-view { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        st.markdown("### Élément du Dragon")
+        element = st.radio("Sélectionne ton type:", ["💧 Eau", "🔥 Feu", "🌿 Plante"], horizontal=True)
         
-        .solid-panel {
-            background-color: var(--panel-bg); border-radius: 20px; padding: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px); margin-bottom: 20px;
-        }
-
-        /* SELECCIÓN DE HUEVO (EL NACIMIENTO) */
-        .element-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
-        .element-card {
-            background: rgba(0,0,0,0.4); border: 3px solid transparent; border-radius: 15px;
-            padding: 20px 10px; text-align: center; cursor: pointer; transition: 0.2s;
-        }
-        .element-card i { font-size: 3rem; margin-bottom: 10px; }
-        .element-card.eau { color: var(--eau); }
-        .element-card.feu { color: var(--feu); }
-        .element-card.plante { color: var(--plante); }
-        .element-card.selected { transform: scale(1.05); background: rgba(255,255,255,0.1); }
-        .element-card.eau.selected { border-color: var(--eau); box-shadow: 0 0 20px rgba(52,152,219,0.4); }
-        .element-card.feu.selected { border-color: var(--feu); box-shadow: 0 0 20px rgba(231,76,60,0.4); }
-        .element-card.plante.selected { border-color: var(--plante); box-shadow: 0 0 20px rgba(46,204,113,0.4); }
-
-        .btn-game {
-            background: linear-gradient(45deg, #f1c40f, #f39c12); color: #000; border: none;
-            border-radius: 12px; padding: 15px; width: 100%; font-weight: 900; font-size: 1.1rem;
-            text-transform: uppercase; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 0 #d35400;
-        }
-        .btn-game:active { transform: translateY(4px); box-shadow: none; }
-        .game-input {
-            background: rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.2);
-            color: white; padding: 15px; border-radius: 12px; width: 100%; text-align: center;
-            font-size: 1.2rem; margin-bottom: 15px; outline: none;
-        }
-
-        /* ESTADO DEL DRAGÓN */
-        .dragon-stage-container { text-align: center; padding: 30px 0; }
-        .dragon-emoji { font-size: 7rem; text-shadow: 0 0 30px rgba(255,255,255,0.2); animation: float 3s ease-in-out infinite; display: inline-block; }
-        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-15px); } 100% { transform: translateY(0px); } }
-        
-        .xp-container { background: rgba(0,0,0,0.5); border-radius: 20px; height: 30px; position: relative; overflow: hidden; border: 2px solid rgba(255,255,255,0.1); margin: 20px 0; }
-        .xp-fill { background: linear-gradient(90deg, var(--plante), var(--eau)); height: 100%; width: 0%; transition: width 0.8s; }
-        .xp-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: 900; font-size: 0.9rem; text-shadow: 1px 1px 2px black; }
-
-        /* EL DIARIO (LE GRIMOIRE) */
-        .mood-selector { display: flex; justify-content: space-between; margin-bottom: 15px; }
-        .mood-btn { font-size: 2.5rem; background: rgba(255,255,255,0.05); border: 2px solid transparent; border-radius: 15px; padding: 5px; cursor: pointer; transition: 0.2s; flex: 1; text-align: center; margin: 0 5px; }
-        .mood-btn.selected { background: rgba(241, 196, 15, 0.2); border-color: var(--accent); transform: scale(1.1); }
-        .journal-entry { background: rgba(0,0,0,0.3); border-left: 4px solid var(--accent); padding: 15px; border-radius: 10px; margin-bottom: 15px; }
-        .btn-help { background: rgba(52, 152, 219, 0.2); color: #3498db; border: 1px solid #3498db; border-radius: 8px; padding: 5px 15px; font-size: 0.8rem; font-weight: bold; cursor: pointer; float: right; }
-
-        /* MENÚ INFERIOR */
-        .dock-nav { position: fixed; bottom: 0; left: 0; width: 100%; background-color: rgba(15, 20, 30, 0.95); border-top: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-around; padding: 15px 0; z-index: 1000; backdrop-filter: blur(10px); }
-        .dock-item { font-size: 1.5rem; color: #7f8fa6; cursor: pointer; transition: 0.2s; text-align: center; }
-        .dock-item p { font-size: 0.6rem; margin: 5px 0 0 0; font-weight: bold; text-transform: uppercase; }
-        .dock-item.active { color: var(--accent); transform: translateY(-5px); }
-    </style>
-</head>
-<body>
-
-    <!-- 1. NACIMIENTO: ELECCIÓN DEL DRAGÓN -->
-    <section id="view-egg" class="view active-view">
-        <div class="text-center mt-4 mb-4">
-            <h1 style="font-weight: 900; color: var(--accent);">L'ÉCLOSERIE</h1>
-            <p>Choisis l'œuf de ton futur dragon</p>
-        </div>
-        
-        <div class="element-grid">
-            <div class="element-card eau" onclick="app.selectElement('Eau', this)">
-                <i class="fa-solid fa-droplet"></i><h5>Eau</h5><small>Fluide</small>
-            </div>
-            <div class="element-card feu" onclick="app.selectElement('Feu', this)">
-                <i class="fa-solid fa-fire"></i><h5>Feu</h5><small>Énergie</small>
-            </div>
-            <div class="element-card plante" onclick="app.selectElement('Plante', this)">
-                <i class="fa-solid fa-leaf"></i><h5>Plante</h5><small>Nature</small>
-            </div>
-        </div>
-
-        <div class="solid-panel mt-4">
-            <label class="small text-secondary mb-2 fw-bold">NOM DU DRAGON</label>
-            <input type="text" id="dragon-name" class="game-input" placeholder="Ex: Aqualis, Ignis...">
-            
-            <label class="small text-secondary mb-2 fw-bold mt-2">ADN UNIQUE (Atout)</label>
-            <select id="dragon-trait" class="game-input">
-                <option value="Force">Force (Fuerza)</option>
-                <option value="Sagesse">Sagesse (Sabiduría)</option>
-                <option value="Vitesse">Vitesse (Velocidad)</option>
-                <option value="Créativité">Créativité (Creatividad)</option>
-            </select>
-        </div>
-        
-        <button onclick="app.hatchEgg()" class="btn-game mt-2">ÉCLORE L'ŒUF <i class="fa-solid fa-sparkles"></i></button>
-    </section>
-
-    <!-- 2. HOME: ESTADO DEL DRAGÓN -->
-    <section id="view-home" class="view">
-        <div class="d-flex justify-content-between align-items-center mb-2 mt-2">
-            <h2 id="display-dname" style="font-weight: 900; margin:0; text-transform: uppercase; color: var(--accent);">NOM</h2>
-            <div class="badge bg-dark border border-secondary p-2"><span id="display-element">Élément</span></div>
-        </div>
-        <p class="text-secondary small fw-bold" id="display-trait">Atout</p>
-        
-        <div class="solid-panel dragon-stage-container mt-3">
-            <h4 id="display-stage" class="text-secondary fw-bold" style="text-transform: uppercase; letter-spacing: 2px;">Stade</h4>
-            <!-- VISUAL DEL DRAGÓN -->
-            <div id="dragon-visual" class="dragon-emoji my-4">🥚</div>
-            
-            <div class="xp-container">
-                <div id="xp-bar" class="xp-fill"></div>
-                <div id="xp-text" class="xp-text">0 / 100 XP</div>
-            </div>
-            <p class="small text-secondary">Complète des missions et écris dans ton journal pour le faire grandir !</p>
-        </div>
-    </section>
-
-    <!-- 3. MISIONES -->
-    <section id="view-missions" class="view">
-        <h2 style="font-weight: 900; color: var(--accent);" class="mb-4">MISSIONS</h2>
-        
-        <div class="solid-panel">
-            <h5 class="fw-bold"><i class="fa-solid fa-qrcode text-info"></i> Codes Secrets ODD</h5>
-            <p class="small text-secondary mb-2">Entrez un code donné par le professeur pour gagner de l'XP.</p>
-            <div class="d-flex gap-2">
-                <input type="text" id="secret-code-input" class="game-input mb-0 text-uppercase" placeholder="CODE..." style="padding:10px;">
-                <button onclick="app.validateCode()" class="btn btn-info fw-bold" style="border-radius:12px;">VALIDER</button>
-            </div>
-        </div>
-        <!-- Se pueden añadir más misiones aquí -->
-    </section>
-
-    <!-- 4. EL DIARIO RESTAURADO (RECOGIDA DE DATOS CUALITATIVOS) -->
-    <section id="view-journal" class="view">
-        <h2 style="font-weight: 900; color: var(--accent);" class="mb-4">LE GRIMOIRE</h2>
-        
-        <div class="solid-panel">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <label class="small text-secondary fw-bold mb-0">COMMENT TE SENS-TU ? (Météo)</label>
-                <!-- DUA: Andamiaje cognitivo -->
-                <button class="btn-help" onclick="app.helpJournal()"><i class="fa-solid fa-life-ring"></i> Aide ?</button>
-            </div>
-            
-            <!-- REGISTRO EMOCIONAL -->
-            <div class="mood-selector mt-3">
-                <div class="mood-btn" onclick="app.setMood(this, '🤩')">🤩</div>
-                <div class="mood-btn" onclick="app.setMood(this, '😊')">😊</div>
-                <div class="mood-btn" onclick="app.setMood(this, '🤔')">🤔</div>
-                <div class="mood-btn" onclick="app.setMood(this, '😫')">😫</div>
-            </div>
-            <input type="hidden" id="journal-mood">
-            
-            <!-- REFLEXIÓN -->
-            <textarea id="journal-text" class="game-input text-start mt-3" rows="4" placeholder="Écris tes réflexions sur le projet aujourd'hui... Tu peux utiliser le Micro d'Or (Sidebar) si tu préfères l'audio !"></textarea>
-            
-            <button onclick="app.saveJournal()" class="btn-game" style="padding: 10px; font-size: 1rem;">POSTER DANS LE JOURNAL (+20 XP)</button>
-        </div>
-        
-        <h5 class="fw-bold mt-4 mb-3">Mes Mémoires (Historique)</h5>
-        <div id="journal-feed"></div>
-    </section>
-
-    <!-- NAVBAR INFERIOR -->
-    <div id="app-dock" class="dock-nav" style="display:none;">
-        <div class="dock-item active" onclick="app.nav('home', this)">
-            <i class="fa-solid fa-dragon"></i><p>Dragon</p>
-        </div>
-        <div class="dock-item" onclick="app.nav('missions', this)">
-            <i class="fa-solid fa-khanda"></i><p>Missions</p>
-        </div>
-        <div class="dock-item" onclick="app.nav('journal', this)">
-            <i class="fa-solid fa-book-journal-whills"></i><p>Grimoire</p>
-        </div>
-    </div>
-
-    <script>
-        // --- BASE DE DATOS (Guardado Local en el navegador) ---
-        let DB = {
-            setup: false,
-            dragon: { name: "", element: "", trait: "", xp: 0 },
-            journal: []
-        };
-
-        // --- SISTEMA DE EVOLUCIÓN (5 FASES) ---
-        const EVOLUTION = [
-            { maxXP: 100, stage: "Œuf", emojiBase: "🥚" },
-            { maxXP: 300, stage: "Bébé", emojiBase: "🦎" },
-            { maxXP: 600, stage: "Adolescent", emojiBase: "🦖" },
-            { maxXP: 1000, stage: "Adulte", emojiBase: "🐲" },
-            { maxXP: 99999, stage: "Légendaire", emojiBase: "🐉" }
-        ];
-
-        const app = {
-            init: () => {
-                const saved = localStorage.getItem("dragon_rpg_db");
-                if(saved) DB = JSON.parse(saved);
-
-                if(DB.setup) {
-                    app.updateUI();
-                    app.showView('view-home');
-                    document.getElementById('app-dock').style.display = 'flex';
-                }
-            },
-
-            save: () => { localStorage.setItem("dragon_rpg_db", JSON.stringify(DB)); },
-
-            // --- ONBOARDING ---
-            selectElement: (el, card) => {
-                document.querySelectorAll('.element-card').forEach(c => c.classList.remove('selected'));
-                card.classList.add('selected');
-                DB.dragon.element = el;
-            },
-
-            hatchEgg: () => {
-                const name = document.getElementById('dragon-name').value.trim();
-                const trait = document.getElementById('dragon-trait').value;
-                if(!name || !DB.dragon.element) return alert("Choisis un élément et un nom !");
+        if st.form_submit_button("Éclore l'Œuf (Empezar)"):
+            if pseudo:
+                elem_clean = element.split(" ")[1] # Extrae Eau, Feu o Plante
                 
-                DB.dragon.name = name;
-                DB.dragon.trait = trait;
-                DB.dragon.xp = 0;
-                DB.setup = true;
-                
-                app.save();
-                confetti();
-                app.updateUI();
-                app.showView('view-home');
-                document.getElementById('app-dock').style.display = 'flex';
-            },
-
-            // --- LÓGICA DE EVOLUCIÓN Y UI ---
-            updateUI: () => {
-                document.getElementById('display-dname').innerText = DB.dragon.name;
-                document.getElementById('display-element').innerText = DB.dragon.element;
-                document.getElementById('display-trait').innerText = `Atout: ${DB.dragon.trait}`;
-                
-                // Calcular Fase actual según XP
-                let currentStage = EVOLUTION[0];
-                let prevMaxXP = 0;
-                
-                for(let i=0; i<EVOLUTION.length; i++) {
-                    if(DB.dragon.xp < EVOLUTION[i].maxXP) {
-                        currentStage = EVOLUTION[i];
-                        break;
+                # Comprobar si existe en la BD
+                existing_data = get_dragon_data(pseudo)
+                if not existing_data:
+                    new_data = {
+                        "pseudo": pseudo,
+                        "element": elem_clean,
+                        "xp": 0,
+                        "journal": []
                     }
-                    prevMaxXP = EVOLUTION[i].maxXP;
-                }
-
-                document.getElementById('display-stage').innerText = currentStage.stage;
-                document.getElementById('dragon-visual').innerText = currentStage.emojiBase;
+                    save_dragon_data(pseudo, new_data)
                 
-                // Color y efectos visuales según elemento
-                let color = "white";
-                if(DB.dragon.element === 'Eau') color = "var(--eau)";
-                if(DB.dragon.element === 'Feu') color = "var(--feu)";
-                if(DB.dragon.element === 'Plante') color = "var(--plante)";
-                document.getElementById('dragon-visual').style.textShadow = `0 0 40px ${color}`;
-                document.getElementById('display-element').style.color = color;
-                
-                // Color de la barra de XP
-                document.getElementById('xp-bar').style.background = `linear-gradient(90deg, #555, ${color})`;
+                st.session_state['current_user'] = pseudo
+                nav('home')
+            else:
+                st.error("¡Debes introducir un nombre!")
 
-                // Calcular porcentaje de XP para el nivel actual
-                let levelXP = DB.dragon.xp - prevMaxXP;
-                let levelMax = currentStage.maxXP - prevMaxXP;
-                let pct = Math.min((levelXP / levelMax) * 100, 100);
-                
-                document.getElementById('xp-bar').style.width = pct + "%";
-                document.getElementById('xp-text').innerText = `${DB.dragon.xp} / ${currentStage.maxXP} XP`;
-            },
+# --- PÁGINA 2: EL DRAGÓN (DASHBOARD) ---
+elif st.session_state['page'] == 'home':
+    if not st.session_state['current_user']: nav('profile')
+    
+    user_data = get_dragon_data(st.session_state['current_user'])
+    stage = get_evolution_stage(user_data['xp'])
+    
+    st.markdown(f"<h2>{user_data['pseudo']}</h2>", unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align:center;'><span style='background:#333; padding:5px 10px; border-radius:10px;'>Dragon d'{user_data['element']}</span></p>", unsafe_allow_html=True)
+    
+    with st.container():
+        st.markdown(f"<div style='font-size: 8rem; text-align: center; margin: 20px 0;'>{stage['emoji']}</div>", unsafe_allow_html=True)
+        st.markdown(f"<h4 style='text-align:center; color:#ccc;'>STADE: {stage['name'].upper()}</h4>", unsafe_allow_html=True)
+        
+        # Barra de progreso
+        pct = min(user_data['xp'] / stage['max_xp'], 1.0)
+        st.progress(pct)
+        st.caption(f"<div style='text-align:center;'>{user_data['xp']} / {stage['max_xp']} XP</div>", unsafe_allow_html=True)
 
-            addXP: (pts) => {
-                DB.dragon.xp += pts;
-                app.save();
-                app.updateUI();
-                confetti({particleCount: 50, spread: 60});
-            },
+    st.markdown("---")
+    badge_img = create_badge(user_data['pseudo'], user_data['element'], stage)
+    st.download_button("⬇️ Télécharger Passeport", badge_img, file_name="dragon_passport.png", mime="image/png")
 
-            // --- NAVEGACIÓN ---
-            nav: (view, btn) => {
-                document.querySelectorAll('.dock-item').forEach(i => i.classList.remove('active'));
-                btn.classList.add('active');
-                app.showView('view-' + view);
-                if(view === 'journal') app.renderJournal();
-            },
-            showView: (id) => {
-                document.querySelectorAll('.view').forEach(v => v.classList.remove('active-view'));
-                document.getElementById(id).classList.add('active-view');
-            },
+# --- PÁGINA 3: MISIONES (CÓDIGOS Y NORMALES) ---
+elif st.session_state['page'] == 'missions':
+    st.markdown("<h1>L'ARÈNE ⚔️</h1>", unsafe_allow_html=True)
+    
+    # Misiones por Código (Mundo Real)[cite: 1]
+    with st.expander("🔑 Missions Secrètes (Codes)", expanded=True):
+        st.write("Introduit le code donné par le professeur.")
+        secret_code = st.text_input("Code Secret:", key="code_input").upper()
+        if st.button("Valider le Code"):
+            # Códigos predefinidos[cite: 1]
+            valid_codes = {"ODD-74A": 100, "RELAIS-100": 100, "BIOS-50": 50}
+            if secret_code in valid_codes:
+                add_xp(valid_codes[secret_code])
+                st.success("Code Validé !")
+            else:
+                st.error("Code Incorrect.")
 
-            // --- VALIDACIÓN DE MISIONES POR CÓDIGO ---
-            validateCode: () => {
-                const code = document.getElementById('secret-code-input').value.trim().toUpperCase();
-                // Ejemplos de códigos secretos para XP
-                if(code === "FRANCAIS2030" || code === "ODD13" || code === "DRAGON") {
-                    alert("Mission accomplie ! +50 XP");
-                    app.addXP(50);
-                    document.getElementById('secret-code-input').value = "";
-                } else {
-                    alert("Code incorrect.");
-                }
-            },
+    # Misiones Normales (Entrenamiento)
+    with st.expander("🧠 Entraînement Quotidien"):
+        q1 = st.radio("Traduis 'Medio Ambiente':", ["La Nature", "L'Environnement", "Le Climat"], index=None)
+        if st.button("Vérifier (Vocabulaire)"):
+            if q1 == "L'Environnement":
+                st.success("Correct!")
+                add_xp(20)
+            else:
+                st.error("Faux.")
 
-            // --- DIARIO METACOGNITIVO Y CUALITATIVO (DUA) ---
-            setMood: (btn, m) => {
-                document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
-                btn.classList.add('selected');
-                document.getElementById('journal-mood').value = m;
-            },
-            helpJournal: () => {
-                // DUA: Andamiaje cognitivo (estructuras de frases prefabricadas)[cite: 2]
-                const box = document.getElementById('journal-text');
-                box.value = "Aujourd'hui, je me sens... parce que... \\n\\nMon point fort a été... \\n\\nJ'ai eu des difficultés avec...";
-            },
-            saveJournal: () => {
-                const mood = document.getElementById('journal-mood').value;
-                const txt = document.getElementById('journal-text').value;
-                if(!mood || !txt) return alert("N'oublie pas ton humeur (émoji) et ton texte !");
-                
-                const entry = { date: new Date().toLocaleDateString(), mood: mood, text: txt };
-                DB.journal.unshift(entry);
-                
-                // Bonificación de XP por reflexión[cite: 2]
-                app.addXP(20); 
-                app.save();
-                app.renderJournal();
-                
-                // Limpiar inputs
-                document.getElementById('journal-text').value = "";
-                document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
-                document.getElementById('journal-mood').value = "";
-            },
-            renderJournal: () => {
-                const feed = document.getElementById('journal-feed');
-                feed.innerHTML = "";
-                DB.journal.forEach(j => {
-                    feed.innerHTML += `
-                        <div class="journal-entry">
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="fw-bold" style="color: var(--accent);">${j.date}</span>
-                                <span style="font-size: 1.5rem;">${j.mood}</span>
-                            </div>
-                            <p class="mb-0 small">${j.text.replace(/\\n/g, '<br>')}</p>
-                        </div>
-                    `;
-                });
-            }
-        };
+# --- PÁGINA 4: EL DIARIO (FORTALEZAS Y DEBILIDADES) ---
+elif st.session_state['page'] == 'journal':
+    st.markdown("<h1>LE GRIMOIRE 📖</h1>", unsafe_allow_html=True)
+    st.info("Note ici tes forces et tes faiblesses pour faire grandir ton dragon mentalement.")
+    
+    with st.form("journal_entry"):
+        st.markdown("### Mon Évaluation")
+        forces = st.text_area("🌟 Tes points forts aujourd'hui (Puntos fuertes):", placeholder="Ex: J'ai bien compris le vocabulaire...")
+        faiblesses = st.text_area("🐢 Ce que tu dois améliorer (Puntos flojos):", placeholder="Ex: Je dois réviser les verbes...")
+        
+        if st.form_submit_button("Sauvegarder (+30 XP)"):
+            if forces and faiblesses:
+                data = get_dragon_data(st.session_state['current_user'])
+                # Guardamos la entrada en la base de datos
+                data['journal'].append({"forces": forces, "faiblesses": faiblesses})
+                data['xp'] += 30
+                save_dragon_data(st.session_state['current_user'], data)
+                st.success("Journal mis à jour !")
+                st.balloons()
+            else:
+                st.error("Remplis les deux champs.")
 
-        app.init();
-    </script>
-</body>
-</html>
-"""
+# ==========================================
+# BLOQUE 7: MENÚ INFERIOR (DOCK)
+# ==========================================
+st.write("<br><br><br>", unsafe_allow_html=True) # Espacio inferior
+st.markdown("---")
+c1, c2, c3, c4 = st.columns(4)
 
-components.html(html_code, height=850, scrolling=True)
+# Mantenemos tu sistema de navegación por botones[cite: 2]
+with c1:
+    if st.button("🐉\nDragon"): nav('home')
+with c2:
+    if st.button("⚔️\nMissions"): nav('missions')
+with c3:
+    if st.button("📖\nJournal"): nav('journal')
+with c4:
+    if st.button("⚙️\nProfil"): nav('profile')
