@@ -92,8 +92,8 @@ st.markdown("""
     
     /* --- FORMA DE HUEVO MÁGICO CON TEXTURAS REALES --- */
     .dragon-egg {
-        width: 140px;
-        height: 190px;
+        width: 150px;
+        height: 200px;
         margin: 20px auto;
         /* La fórmula matemática en CSS para hacer forma de huevo */
         border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
@@ -105,18 +105,18 @@ st.markdown("""
     
     /* Huevo de Fuego (Lava pura) */
     .egg-feu { 
-        background-image: url('https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?q=80&w=800&auto=format&fit=crop'); 
-        box-shadow: inset -15px -15px 30px rgba(0,0,0,0.8), 0 0 35px #ff4500; 
+        background-image: url('https://encrypted-tbn0.gstatic.com/licensed-image?q=tbn:ANd9GcRI_XXEwdegy5afN1p63cMkP3xwJp0_jHzbAPVw6eyhhpNboPuVOA_cQ4EdkYJZxjzKzMBUWVHpqf2ma2Q'); 
+        box-shadow: inset -15px -15px 30px rgba(0,0,0,0.8), 0 0 40px #ff4500; 
     }
-    /* Huevo de Agua (Remolinos profundos) */
+    /* Huevo de Agua (Cristal Azul) */
     .egg-eau { 
-        background-image: url('https://images.unsplash.com/photo-1548268770-66184a21657e?q=80&w=800&auto=format&fit=crop'); 
-        box-shadow: inset -15px -15px 30px rgba(0,0,0,0.8), 0 0 35px #00bfff; 
+        background-image: url('https://encrypted-tbn1.gstatic.com/licensed-image?q=tbn:ANd9GcSZO_rjUjg-1JO6guWA6moeLQWPn4B1C8FvLgjQe2T3OAoAHqIAFfcPuvYLCuf5nAp86z_oTDa1AB8SOLk'); 
+        box-shadow: inset -15px -15px 30px rgba(0,0,0,0.8), 0 0 40px #00bfff; 
     }
-    /* Huevo de Planta (Raíces y musgo) */
+    /* Huevo de Planta (Raíces Entrelazadas) */
     .egg-plante { 
-        background-image: url('https://images.unsplash.com/photo-1533038590840-1cde6e668a91?q=80&w=800&auto=format&fit=crop'); 
-        box-shadow: inset -15px -15px 30px rgba(0,0,0,0.8), 0 0 35px #32cd32; 
+        background-image: url('https://encrypted-tbn3.gstatic.com/licensed-image?q=tbn:ANd9GcT4lFynFf2Z0rBBqh4jEyDZQ174Cxl9ZzYjGLRmJ3Web22xGuJFNivHl79D5ZPL8GOASIKtsHaogMfkeKA'); 
+        box-shadow: inset -15px -15px 30px rgba(0,0,0,0.8), 0 0 40px #32cd32; 
     }
 
     @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
