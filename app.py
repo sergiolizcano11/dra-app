@@ -3,6 +3,8 @@ import pandas as pd
 import os
 import base64
 from datetime import datetime
+from gtts import gTTS
+from st_audiorec import st_audiorec
 
 # --- 1. CONFIGURACIÓN ---
 st.set_page_config(
@@ -12,7 +14,54 @@ st.set_page_config(
     initial_sidebar_state="collapsed" 
 )
 
-# --- FUNCIÓN PARA LEER TUS IMÁGENES LOCALES (.PNG) ---
+# --- SISTEMA MULTI-IDIOMA (DUA) ---
+if 'lang' not in st.session_state:
+    st.session_state.lang = 'Français'
+
+translations = {
+    'Français': {
+        'title': "L'Académie des Dragons", 'welcome': "Bienvenue, apprenti dresseur.",
+        'home': "Repaire", 'guild': "Guilde", 'journal': "Grimoire", 'logout': "Sortir",
+        'egg_title': "La Couveuse Magique", 'name_label': "Baptise ton dragon", 'elem_label': "Choisis son essence (Élément)",
+        'secret_title': "Code Secret du Maître", 'training': "Entraînement Quotidien", 'listen_inst': "🔊 Écouter les instructions"
+    },
+    'Español': {
+        'title': "La Academia de Dragones", 'welcome': "Bienvenido, aprendiz de domador.",
+        'home': "Guarida", 'guild': "Gremio", 'journal': "Grimorio", 'logout': "Salir",
+        'egg_title': "La Incubadora Mágica", 'name_label': "Bautiza a tu dragón", 'elem_label': "Elige su esencia (Elemento)",
+        'secret_title': "Código Secreto del Maestro", 'training': "Entrenamiento Diario", 'listen_inst': "🔊 Escuchar instrucciones"
+    },
+    'English': {
+        'title': "The Dragon Academy", 'welcome': "Welcome, apprentice tamer.",
+        'home': "Lair", 'guild': "Guild", 'journal': "Grimoire", 'logout': "Logout",
+        'egg_title': "The Magic Incubator", 'name_label': "Name your dragon", 'elem_label': "Choose its essence (Element)",
+        'secret_title': "Master's Secret Code", 'training': "Daily Training", 'listen_inst': "🔊 Listen to instructions"
+    }
+}
+t = translations[st.session_state.lang]
+
+# DUA: LECTEUR IMMERSIF (Texto a Voz)
+def speak_text(text):
+    try:
+        lang_code = 'fr' if st.session_state.lang == 'Français' else ('es' if st.session_state.lang == 'Español' else 'en')
+        tts = gTTS(text=text, lang=lang_code)
+        mp3_fp = io.BytesIO() if 'io' in globals() else None
+        # En caso de requerir el objeto BytesIO aseguramos la importación
+        import io
+        mp3_fp = io.BytesIO()
+        tts.write_to_fp(mp3_fp)
+        mp3_fp.seek(0)
+        b64 = base64.b64encode(mp3_fp.read()).decode()
+        md = f"""
+            <audio controls class="stAudio" autoplay>
+            <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
+            </audio>
+            """
+        st.markdown(md, unsafe_allow_html=True)
+    except:
+        st.caption("🔇 (Audio no disponible)")
+
+# --- FUNCIONES DE IMÁGENES LOCALES ---
 def get_local_img(path):
     if os.path.exists(path):
         with open(path, "rb") as f:
@@ -20,16 +69,15 @@ def get_local_img(path):
             return f"data:image/{ext};base64,{base64.b64encode(f.read()).decode()}"
     return "https://cdn-icons-png.flaticon.com/512/528/528098.png"
 
-# Conectamos las imágenes de los huevos y bebés personalizados
 egg_feu_b64 = get_local_img("huevo_fuego.png")
 egg_eau_b64 = get_local_img("huevo_agua.png")
-egg_plante_b64 = get_local_img("huevo_plante.png")
+egg_plante_b64 = get_local_img("huevo_planta.png")
 
 bebe_feu_b64 = get_local_img("bebe_fuego.png")
 bebe_eau_b64 = get_local_img("bebe_agua.png")
 bebe_plante_b64 = get_local_img("bebe_plante.png")
 
-# --- 2. CSS "CÓMIC / POP-ART" (ALTA VISIBILIDAD Y COLOR) ---
+# --- 2. CSS "CÓMIC / POP-ART" (ALTA VISIBILIDAD) ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Poppins:wght@400;700;900&display=swap');
@@ -107,13 +155,7 @@ st.markdown("""
         background: #ffe65c;
         transform: translateY(-2px);
     }
-    
-    .stButton > button:active {
-        transform: translateY(3px);
-        border-bottom: 2px solid #1A1A1A;
-    }
 
-    /* --- HUEVOS Y BEBÉS 2D GAMING --- */
     .dragon-egg, .dragon-baby {
         width: 180px;
         height: 180px;
@@ -146,17 +188,15 @@ st.markdown("""
     }
 
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
-    div[data-testid="column"] { display: flex; flex-direction: column; align-items: center; justify-content: center; }
 </style>
 """, unsafe_allow_html=True)
 
-# Inyectamos las imágenes base64 en CSS de manera dinámica
+# Inyectar imágenes en CSS
 st.markdown(f"""
 <style>
     .egg-feu {{ background-image: url('{egg_feu_b64}'); }}
     .egg-eau {{ background-image: url('{egg_eau_b64}'); }}
     .egg-plante {{ background-image: url('{egg_plante_b64}'); }}
-    
     .baby-feu {{ background-image: url('{bebe_feu_b64}'); }}
     .baby-eau {{ background-image: url('{bebe_eau_b64}'); }}
     .baby-plante {{ background-image: url('{bebe_plante_b64}'); }}
@@ -180,17 +220,24 @@ init_db()
 df_dragones = load_data(FILE_DRAGONS)
 df_journal = load_data(FILE_JOURNAL)
 
+# --- CONFIGURACIÓN DE IDIOMA EN SIDEBAR ---
+with st.sidebar:
+    st.selectbox("🌐 Langue / Idioma / Language", ["Français", "Español", "English"], key='lang_select')
+    if st.session_state.get('lang_select') and st.session_state.lang_select != st.session_state.lang:
+        st.session_state.lang = st.session_state.lang_select
+        st.rerun()
+
 # --- 4. LÓGICA DE EVOLUCIÓN ---
 def get_dragon_visual(xp, elemento):
     if xp < 100:
-        if "Feu" in elemento: return "<div class='dragon-egg egg-feu glow-feu'></div>", "L'Œuf de Lave"
-        elif "Eau" in elemento: return "<div class='dragon-egg egg-eau glow-eau'></div>", "L'Œuf des Courants"
+        if "Feu" in elemento or "Fuego" in elemento: return "<div class='dragon-egg egg-feu glow-feu'></div>", "L'Œuf de Lave"
+        elif "Eau" in elemento or "Agua" in elemento: return "<div class='dragon-egg egg-eau glow-eau'></div>", "L'Œuf des Courants"
         else: return "<div class='dragon-egg egg-plante glow-plante'></div>", "L'Œuf des Racines"
     elif xp < 300:
-        if "Feu" in elemento: return "<div class='dragon-baby baby-feu glow-feu'></div>", "Bébé de Feu"
-        elif "Eau" in elemento: return "<div class='dragon-baby baby-eau glow-eau'></div>", "Bébé d'Eau"
+        if "Feu" in elemento or "Fuego" in elemento: return "<div class='dragon-baby baby-feu glow-feu'></div>", "Bébé de Feu"
+        elif "Eau" in elemento or "Agua" in elemento: return "<div class='dragon-baby baby-eau glow-eau'></div>", "Bébé d'Eau"
         else: return "<div class='dragon-baby baby-plante glow-plante'></div>", "Bébé de Plante"
-    elif xp < 600: return "<div class='dragon-emoji'>🦖</div>", "Jeune Dragon (Adolescent)"
+    elif xp < 600: return "<div class='dragon-emoji'>🦖</div>", "Jeune Dragon"
     elif xp < 1000: return "<div class='dragon-emoji'>🐲</div>", "Dragon Adulte"
     else: return "<div class='dragon-emoji'>🐉</div>", "Dragon Légendaire"
 
@@ -222,7 +269,7 @@ def ganar_xp(cantidad):
 
 # --- LOGIN ---
 if st.session_state['page'] == 'login':
-    st.markdown("<div class='hero-header'><h1>L'Académie des Dragons</h1><p style='color:#FFF; font-weight:bold;'>Bienvenue, apprenti dresseur.</p></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='hero-header'><h1>{t['title']}</h1><p style='color:#FFF; font-weight:bold;'>{t['welcome']}</p></div>", unsafe_allow_html=True)
     with st.form("login_form"):
         st.markdown("<h3 style='text-align:center;'>Entrez votre nom</h3>", unsafe_allow_html=True)
         usuario = st.text_input("", placeholder="Ex: Arthur...")
@@ -233,13 +280,13 @@ if st.session_state['page'] == 'login':
                 else: nav('incubator')
             else: st.error("Le nom est requis.")
 
-# --- LA INCUBADORA (NUEVO DRAGÓN) ---
+# --- LA INCUBADORA ---
 elif st.session_state['page'] == 'incubator':
-    st.markdown("<div class='hero-header'><h1>La Couveuse Magique</h1></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='hero-header'><h1>{t['egg_title']}</h1></div>", unsafe_allow_html=True)
     with st.form("incubator_form"):
-        st.markdown("### 1. Baptise ton dragon")
+        st.markdown(f"### 1. {t['name_label']}")
         nombre_dragon = st.text_input("Nom:", placeholder="Ex: Ignis, Aqualis...")
-        st.markdown("### 2. Choisis son essence (Élément)")
+        st.markdown(f"### 2. {t['elem_label']}")
         elemento = st.radio("", ["🔥 Feu (Fuego)", "💧 Eau (Agua)", "🌿 Plante (Planta)"], horizontal=True)
         if st.form_submit_button("Adopter l'Œuf"):
             if nombre_dragon:
@@ -249,7 +296,7 @@ elif st.session_state['page'] == 'incubator':
                 nav('home')
             else: st.error("Il lui faut un nom !")
 
-# --- LA GUARIDA (EL DRAGÓN) ---
+# --- LA GUARIDA ---
 elif st.session_state['page'] == 'home':
     mi_dragon = df_dragones[df_dragones['Propietario'] == st.session_state['current_user']].iloc[0]
     xp_actual = mi_dragon['XP']
@@ -273,12 +320,15 @@ elif st.session_state['page'] == 'home':
     """, unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-# --- EL GREMIO (MISIONES CON OPCIONES ÚNICAS Y CONTROL DE INTENTO) ---
+# --- EL GREMIO (CON AUDIO / DUA Y BLOQUEO DE ÚNICO INTENTO) ---
 elif st.session_state['page'] == 'missions':
     st.markdown("<div class='hero-header'><h1>La Guilde</h1></div>", unsafe_allow_html=True)
     
-    # Código maestro secreto
-    with st.expander("🗝️ Code Secret du Maître", expanded=False):
+    # DUA: Botón de lectura de instrucciones en audio
+    if st.button(t['listen_inst']):
+        speak_text("Choisissez une mission d'entraînement, répondez correctement une seule fois pour gagner de l'expérience.")
+
+    with st.expander(f"🗝️ {t['secret_title']}", expanded=False):
         codigo = st.text_input("Code:", key="secret_code_input").upper()
         if st.button("Valider la Quête Secrète"):
             if codigo == "DRAGON":
@@ -292,9 +342,8 @@ elif st.session_state['page'] == 'missions':
             else:
                 st.error("Code invalide.")
 
-    st.markdown("### ⚔️ Entraînement Quotidien (Choisis la bonne réponse)")
+    st.markdown(f"### ⚔️ {t['training']}")
 
-    # Definición de misiones con varias opciones y una sola correcta (índice c)
     misiones_arcade = [
         ("m_num", "🔢 123 Les Nombres", "10 stylos = 20€. 1 stylo = ?", ["1€", "2€", "5€", "10€"], 1, 10),
         ("m_fut", "🚀 Futur Simple", "Demain je ___ (manger)", ["mange", "mangerai", "mangerais", "mangeais"], 1, 10),
@@ -310,13 +359,17 @@ elif st.session_state['page'] == 'missions':
 
     for m_id, titulo, pregunta, opciones, correcta, xp_val in misiones_arcade:
         with st.expander(titulo):
-            st.markdown(f"<div id='game-question'>{pregunta}</div>", unsafe_allow_html=True)
-            
-            # Si ya se respondió, bloquear
+            # Botón DUA integrado para leer la pregunta en voz alta
+            col_q1, col_q2 = st.columns([5, 1])
+            with col_q1:
+                st.markdown(f"<div id='game-question'>{pregunta}</div>", unsafe_allow_html=True)
+            with col_q2:
+                if st.button("🔊", key=f"speak_{m_id}"):
+                    speak_text(pregunta)
+
             if m_id in st.session_state['answered_missions']:
-                st.info("✅ Mission déjà accomplie ! (Déjà évaluée)")
+                st.info("✅ Mission déjà accomplie !")
             else:
-                # Generar botones para cada opción
                 selected_option = st.radio("Options :", opciones, key=f"radio_{m_id}", index=None)
                 if st.button("Valider la réponse", key=f"btn_{m_id}"):
                     if selected_option is not None:
@@ -332,7 +385,7 @@ elif st.session_state['page'] == 'missions':
                     else:
                         st.warning("Sélectionne une option avant de valider.")
 
-# --- EL GRIMORIO (DIARIO) ---
+# --- EL GRIMORIO ---
 elif st.session_state['page'] == 'journal':
     st.markdown("<div class='hero-header'><h1>Le Grimoire</h1></div>", unsafe_allow_html=True)
     st.markdown("<div class='solid-panel'>", unsafe_allow_html=True)
@@ -356,7 +409,7 @@ elif st.session_state['page'] == 'journal':
         st.markdown(f"<div class='solid-panel' style='padding:15px;'><small style='color:#0066CC;'>{row['Date']}</small><br><i>{row['Reflexion']}</i></div>", unsafe_allow_html=True)
 
 # ==========================================
-# MENU INFERIOR
+# MENÚ INFERIOR
 # ==========================================
 if st.session_state['current_user'] and st.session_state['page'] != 'incubator':
     st.write("<br><br>", unsafe_allow_html=True)
@@ -364,12 +417,12 @@ if st.session_state['current_user'] and st.session_state['page'] != 'incubator':
     
     c1, c2, c3, c4 = st.columns(4)
     with c1:
-        if st.button("🐉\nGuarida"): nav('home')
+        if st.button(f"🐉\n{t['home']}"): nav('home')
     with c2:
-        if st.button("⚔️\nGremio"): nav('missions')
+        if st.button(f"⚔️\n{t['guild']}"): nav('missions')
     with c3:
-        if st.button("📖\nGrimorio"): nav('journal')
+        if st.button(f"📖\n{t['journal']}"): nav('journal')
     with c4:
-        if st.button("🚪\nSalir"): 
+        if st.button(f"🚪\n{t['logout']}"): 
             st.session_state['current_user'] = None
             nav('login')
