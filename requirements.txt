@@ -1,3 +1,9 @@
 streamlit
 pandas
+openpyxl
+fpdf
+gTTS
+streamlit-audiorec
+qrcode
+Pillow
 watchdog
