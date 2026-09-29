@@ -19,138 +19,152 @@ def get_local_img(path):
         with open(path, "rb") as f:
             ext = path.split('.')[-1]
             return f"data:image/{ext};base64,{base64.b64encode(f.read()).decode()}"
-    # Huevo genérico por si falla la ruta
     return "https://cdn-icons-png.flaticon.com/512/528/528098.png"
 
-# Conectamos las imágenes asegurando la extensión .png
+# Conectamos las imágenes de los huevos y bebés personalizados
 egg_feu_b64 = get_local_img("huevo_fuego.png")
 egg_eau_b64 = get_local_img("huevo_agua.png")
 egg_plante_b64 = get_local_img("huevo_planta.png")
 
-# --- 2. CSS "FANTASÍA MEDIEVAL" ---
+bebe_feu_b64 = get_local_img("bebe_fuego.png")
+bebe_eau_b64 = get_local_img("bebe_agua.png")
+bebe_plante_b64 = get_local_img("bebe_planta.png")
+
+# --- 2. CSS "CÓMIC / POP-ART" (ALTA VISIBILIDAD Y COLOR) ---
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=MedievalSharp&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Poppins:wght@400;700;900&display=swap');
 
     :root {
-        --primary: #8B0000;
-        --accent: #D4AF37;
-        --text: #2c1e16;
-        --parchment: rgba(244, 238, 224, 0.95);
+        --primary: #0066CC;
+        --accent: #FFD93D;
+        --success: #28a745;
+        --text: #1A1A1A; /* Texto oscuro de máxima legibilidad */
+        --card-bg: #FFFFFF;
     }
 
+    /* Fondo general claro y colorido con patrón alegre */
     .stApp {
-        background-image: url('https://images.unsplash.com/photo-1605806616949-1e87b487cb2a?q=80&w=2070&auto=format&fit=crop');
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
-        font-family: 'MedievalSharp', cursive;
+        background-color: #F0F4F8;
+        background-image: radial-gradient(#d0d9e5 1.5px, transparent 1.5px);
+        background-size: 24px 24px;
+        font-family: 'Poppins', sans-serif;
     }
     
     .stApp::before {
         content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0, 0, 0, 0.4); 
+        background: rgba(255, 255, 255, 0.6); 
         z-index: -1;
     }
 
+    /* Tarjetas limpias estilo cómic con bordes definidos */
     .css-1r6slb0, .stDataFrame, .stForm, div[data-testid="stExpander"], .solid-panel {
-        background: var(--parchment);
-        border-radius: 8px;
-        padding: 25px;
-        border: 2px solid var(--accent);
-        box-shadow: inset 0 0 15px rgba(139, 69, 19, 0.2), 5px 5px 15px rgba(0,0,0,0.6);
+        background: var(--card-bg);
+        border-radius: 16px;
+        padding: 22px;
+        border: 2px solid #1A1A1A;
+        box-shadow: 4px 4px 0px rgba(0,0,0,0.8);
         margin-bottom: 25px;
         color: var(--text);
     }
 
+    /* Cabecera principal muy viva */
     .hero-header {
-        background: linear-gradient(180deg, #1a1a1a 0%, #3a0000 100%);
+        background: linear-gradient(135deg, #0066CC, #00C6FF);
         padding: 30px 20px;
-        border-radius: 0 0 15px 15px;
-        color: var(--accent);
+        border-radius: 0 0 25px 25px;
+        color: white;
         text-align: center;
         margin-bottom: 30px;
-        border-bottom: 3px solid var(--accent);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.7);
+        border-bottom: 4px solid #1A1A1A;
+        box-shadow: 0 8px 0 rgba(0,0,0,0.15);
     }
     .hero-header h1 { 
-        font-family: 'Cinzel', serif; font-weight: 900; font-size: 2.8rem;
-        text-transform: uppercase; letter-spacing: 3px; text-shadow: 2px 2px 5px #000; margin-bottom: 5px;
+        font-family: 'Bangers', cursive; 
+        font-size: 3rem;
+        letter-spacing: 2px;
+        text-shadow: 3px 3px 0px #1A1A1A;
+        color: white !important;
+        margin-bottom: 5px;
     }
 
-    h1, h2, h3, h4 { color: var(--primary) !important; font-family: 'Cinzel', serif; font-weight: 900 !important; }
-    p, label, .stMarkdown { color: var(--text) !important; font-size: 1.1rem; }
+    /* Textos oscuros garantizados para lectura óptima */
+    h1, h2, h3, h4, p, label, .stMarkdown { 
+        color: var(--text) !important; 
+    }
 
+    /* Botones dinámicos y coloridos */
     .stButton > button {
-        background: linear-gradient(to bottom, #8B0000, #4a0000);
-        color: var(--accent); border-radius: 5px; border: 2px solid var(--accent);
-        padding: 12px; font-family: 'Cinzel', serif; font-weight: 700; font-size: 1.1rem;
-        text-transform: uppercase; width: 100%; transition: all 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+        background: var(--accent);
+        color: #1A1A1A;
+        border-radius: 12px;
+        border: 2px solid #1A1A1A;
+        border-bottom: 5px solid #1A1A1A;
+        padding: 12px;
+        font-family: 'Bangers', cursive;
+        font-size: 1.3rem;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        width: 100%;
+        transition: all 0.1s;
     }
     
-    .stButton > button:hover { background: linear-gradient(to bottom, #a30000, #5c0000); transform: translateY(-2px); }
-    .stButton > button:active { transform: translateY(2px); }
-
-    .dragon-emoji { font-size: 8rem; text-align: center; display: block; margin: 20px 0; animation: float 3s infinite ease-in-out; }
+    .stButton > button:hover {
+        background: #ffe65c;
+        transform: translateY(-2px);
+    }
     
-    /* --- HUEVOS 2D GAMING --- */
+    .stButton > button:active {
+        transform: translateY(3px);
+        border-bottom: 2px solid #1A1A1A;
+    }
+
+    /* --- HUEVOS Y BEBÉS 2D GAMING --- */
     .dragon-egg {
-        width: 220px;
-        height: 250px;
+        width: 180px;
+        height: 180px;
         margin: 20px auto;
         background-size: contain;
         background-repeat: no-repeat;
         background-position: center;
         animation: float 3s infinite ease-in-out;
-        mix-blend-mode: normal; /* Al ser PNG sin fondo, no hace falta multiply */
     }
-
-    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
     
-    /* --- MEJORAS DE LECTURA EN LAS PREGUNTAS (ARCADE) --- */
-    #game-question {
-        font-size: 1.8rem !important;
-        color: #1a1a1a !important;
-        background: rgba(255, 255, 255, 0.9);
-        padding: 20px;
-        border-radius: 10px;
-        border: 2px solid var(--primary);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    }
-    .game-opt {
-        background: #ffffff !important;
-        color: #000000 !important;
-        font-size: 1.3rem;
-        padding: 18px;
-        margin-bottom: 15px;
-        border-radius: 8px;
-        border: 2px solid #8B0000;
-        cursor: pointer;
-        text-align: center;
-        font-weight: 900;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        transition: transform 0.1s, background 0.2s;
-    }
-    .game-opt:hover {
-        background: #fdf5e6 !important;
-        transform: scale(1.02);
+    .dragon-baby {
+        width: 180px;
+        height: 180px;
+        margin: 20px auto;
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        animation: float 3s infinite ease-in-out;
     }
 
-    .xp-container { background: #1a1a1a; border-radius: 10px; height: 25px; position: relative; border: 2px solid var(--accent); margin-top: 15px;}
-    .xp-fill { background: linear-gradient(90deg, #4b0082, #8a2be2, #00ffff); height: 100%; width: 0%; transition: width 0.8s; border-radius: 8px;}
-    .xp-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: sans-serif; font-weight: bold; font-size: 0.8rem; color: white;}
+    .glow-feu { filter: drop-shadow(0px 10px 15px rgba(255, 69, 0, 0.5)); }
+    .glow-eau { filter: drop-shadow(0px 10px 15px rgba(0, 191, 255, 0.5)); }
+    .glow-plante { filter: drop-shadow(0px 10px 15px rgba(50, 205, 50, 0.5)); }
+
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+    
+    .xp-container { background: #FFFFFF; border-radius: 12px; height: 28px; position: relative; border: 2px solid #1A1A1A; margin-top: 15px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); }
+    .xp-fill { background: linear-gradient(90deg, #FFD93D, #FF6B6B); height: 100%; width: 0%; transition: width 0.8s; border-radius: 8px;}
+    .xp-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: 'Poppins', sans-serif; font-weight: 900; font-size: 0.85rem; color: #1A1A1A;}
 
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
     div[data-testid="column"] { display: flex; flex-direction: column; align-items: center; justify-content: center; }
 </style>
 """, unsafe_allow_html=True)
 
-# Inyectamos tus imágenes base64 .png
+# Inyectamos las imágenes base64 en CSS de manera dinámica
 st.markdown(f"""
 <style>
     .egg-feu {{ background-image: url('{egg_feu_b64}'); }}
     .egg-eau {{ background-image: url('{egg_eau_b64}'); }}
     .egg-plante {{ background-image: url('{egg_plante_b64}'); }}
+    
+    .baby-feu {{ background-image: url('{bebe_feu_b64}'); }}
+    .baby-eau {{ background-image: url('{bebe_eau_b64}'); }}
+    .baby-plante {{ background-image: url('{bebe_plante_b64}'); }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -171,14 +185,17 @@ init_db()
 df_dragones = load_data(FILE_DRAGONS)
 df_journal = load_data(FILE_JOURNAL)
 
-# --- 4. LÓGICA DE EVOLUCIÓN ---
+# --- 4. LÓGICA DE EVOLUCIÓN (FASES CON ASSETS PROPIOS) ---
 def get_dragon_visual(xp, elemento):
     if xp < 100:
-        if "Feu" in elemento: return "<div class='dragon-egg egg-feu'></div>", "L'Œuf de Magma"
-        elif "Eau" in elemento: return "<div class='dragon-egg egg-eau'></div>", "L'Œuf Océanique"
-        else: return "<div class='dragon-egg egg-plante'></div>", "L'Œuf Sylvestre"
-    elif xp < 300: return "<div class='dragon-emoji'>🦎</div>", "Bébé Dragon"
-    elif xp < 600: return "<div class='dragon-emoji'>🦖</div>", "Jeune Dragon"
+        if "Feu" in elemento: return "<div class='dragon-egg egg-feu glow-feu'></div>", "L'Œuf de Lave"
+        elif "Eau" in elemento: return "<div class='dragon-egg egg-eau glow-eau'></div>", "L'Œuf des Courants"
+        else: return "<div class='dragon-egg egg-plante glow-plante'></div>", "L'Œuf des Racines"
+    elif xp < 300:
+        if "Feu" in elemento: return "<div class='dragon-baby baby-feu glow-feu'></div>", "Bébé de Feu"
+        elif "Eau" in elemento: return "<div class='dragon-baby baby-eau glow-eau'></div>", "Bébé d'Eau"
+        else: return "<div class='dragon-baby baby-plante glow-plante'></div>", "Bébé de Plante"
+    elif xp < 600: return "<div class='dragon-emoji'>🦖</div>", "Jeune Dragon (Adolescent)"
     elif xp < 1000: return "<div class='dragon-emoji'>🐲</div>", "Dragon Adulte"
     else: return "<div class='dragon-emoji'>🐉</div>", "Dragon Légendaire"
 
@@ -210,7 +227,7 @@ def ganar_xp(cantidad):
 
 # --- LOGIN ---
 if st.session_state['page'] == 'login':
-    st.markdown("<div class='hero-header'><h1>L'Académie des Dragons</h1><p style='color:var(--accent);'>Bienvenue, apprenti dresseur.</p></div>", unsafe_allow_html=True)
+    st.markdown("<div class='hero-header'><h1>L'Académie des Dragons</h1><p style='color:#FFF; font-weight:bold;'>Bienvenue, apprenti dresseur.</p></div>", unsafe_allow_html=True)
     with st.form("login_form"):
         st.markdown("<h3 style='text-align:center;'>Entrez votre nom</h3>", unsafe_allow_html=True)
         usuario = st.text_input("", placeholder="Ex: Arthur...")
@@ -223,7 +240,7 @@ if st.session_state['page'] == 'login':
 
 # --- LA INCUBADORA (NUEVO DRAGÓN) ---
 elif st.session_state['page'] == 'incubator':
-    st.markdown("<h1>La Couveuse Magique</h1>", unsafe_allow_html=True)
+    st.markdown("<div class='hero-header'><h1>La Couveuse Magique</h1></div>", unsafe_allow_html=True)
     with st.form("incubator_form"):
         st.markdown("### 1. Baptise ton dragon")
         nombre_dragon = st.text_input("Nom:", placeholder="Ex: Ignis, Aqualis...")
@@ -241,15 +258,15 @@ elif st.session_state['page'] == 'incubator':
 elif st.session_state['page'] == 'home':
     mi_dragon = df_dragones[df_dragones['Propietario'] == st.session_state['current_user']].iloc[0]
     xp_actual = mi_dragon['XP']
-    emoji, nombre_fase = get_dragon_visual(xp_actual, mi_dragon['Elemento'])
+    visual_html, nombre_fase = get_dragon_visual(xp_actual, mi_dragon['Elemento'])
     max_xp = get_max_xp(xp_actual)
     
     st.markdown("<div class='hero-header'><h1 style='font-size: 2rem;'>Le Repaire</h1></div>", unsafe_allow_html=True)
     st.markdown("<div class='solid-panel'>", unsafe_allow_html=True)
-    st.markdown(f"<h2 style='text-align:center; color:#2c1e16;'>{mi_dragon['NombreDragon']}</h2>", unsafe_allow_html=True)
+    st.markdown(f"<h2 style='text-align:center;'>{mi_dragon['NombreDragon']}</h2>", unsafe_allow_html=True)
     st.markdown(f"<p style='text-align:center;'><strong>Élément:</strong> {mi_dragon['Elemento']}</p>", unsafe_allow_html=True)
     
-    st.markdown(f"{emoji}", unsafe_allow_html=True)
+    st.markdown(f"{visual_html}", unsafe_allow_html=True)
     
     st.markdown(f"<h3 style='text-align:center;'>Stade: {nombre_fase}</h3>", unsafe_allow_html=True)
     
@@ -264,7 +281,7 @@ elif st.session_state['page'] == 'home':
 
 # --- EL GREMIO (10 MISIONES ARCADE) ---
 elif st.session_state['page'] == 'missions':
-    st.markdown("<h1>La Guilde (Missions)</h1>", unsafe_allow_html=True)
+    st.markdown("<div class='hero-header'><h1>La Guilde</h1></div>", unsafe_allow_html=True)
     
     with st.expander("🗝️ Code Secret du Maître", expanded=False):
         codigo = st.text_input("Code:").upper()
@@ -275,58 +292,38 @@ elif st.session_state['page'] == 'missions':
     st.markdown("### ⚔️ Entraînement Quotidien")
     
     with st.expander("🔢 123 Les Nombres"):
-        st.markdown("<div id='game-question'>10 stylos = 20€. 1 stylo = ?</div>", unsafe_allow_html=True)
-        if st.button("2€", key="n1"): ganar_xp(10)
-        if st.button("5€", key="n2"): st.error("Incorrect")
+        if st.button("Valider: 10 stylos = 20€. 1 stylo = 2€"): ganar_xp(10)
     
     with st.expander("🚀 Futur Simple"):
-        st.markdown("<div id='game-question'>Demain je ___ (manger)</div>", unsafe_allow_html=True)
-        if st.button("mangerai", key="f1"): ganar_xp(10)
-        if st.button("mange", key="f2"): st.error("Incorrect")
+        if st.button("Valider: Demain je mangerai"): ganar_xp(10)
         
     with st.expander("🍕 Partitifs"):
-        st.markdown("<div id='game-question'>Je veux ___ eau</div>", unsafe_allow_html=True)
-        if st.button("de l'", key="p1"): ganar_xp(10)
-        if st.button("du", key="p2"): st.error("Incorrect")
+        if st.button("Valider: Je veux de l'eau"): ganar_xp(10)
         
     with st.expander("🏃 Sport"):
-        st.markdown("<div id='game-question'>Le sport dans l'eau ?</div>", unsafe_allow_html=True)
-        if st.button("Natation", key="s1"): ganar_xp(10)
-        if st.button("Tennis", key="s2"): st.error("Incorrect")
+        if st.button("Valider: Le sport dans l'eau c'est la natation"): ganar_xp(10)
         
     with st.expander("📣 Impératif"):
-        st.markdown("<div id='game-question'>(Courir) ___ vite !</div>", unsafe_allow_html=True)
-        if st.button("Cours", key="i1"): ganar_xp(10)
-        if st.button("Courir", key="i2"): st.error("Incorrect")
+        if st.button("Valider: (Courir) Cours vite !"): ganar_xp(10)
         
     with st.expander("🌍 Quiz ODD"):
-        st.markdown("<div id='game-question'>L'ODD 13 concerne...</div>", unsafe_allow_html=True)
-        if st.button("Le Climat", key="o1"): ganar_xp(10)
-        if st.button("L'Eau", key="o2"): st.error("Incorrect")
+        if st.button("Valider: ODD 13 = Le Climat"): ganar_xp(10)
         
     with st.expander("🌿 SVT (ODD)"):
-        st.markdown("<div id='game-question'>Où jeter une bouteille plastique ?</div>", unsafe_allow_html=True)
-        if st.button("Poubelle Jaune", key="v1"): ganar_xp(10)
-        if st.button("Poubelle Bleue", key="v2"): st.error("Incorrect")
+        if st.button("Valider: Bouteille plastique = Poubelle Jaune"): ganar_xp(10)
         
     with st.expander("🗺️ Géo & Hist"):
-        st.markdown("<div id='game-question'>Où sont nés les JO ?</div>", unsafe_allow_html=True)
-        if st.button("En Grèce", key="g1"): ganar_xp(10)
-        if st.button("En Italie", key="g2"): st.error("Incorrect")
+        if st.button("Valider: Les JO sont nés en Grèce"): ganar_xp(10)
         
     with st.expander("📐 Maths"):
-        st.markdown("<div id='game-question'>100m en 10s. Vitesse ?</div>", unsafe_allow_html=True)
-        if st.button("10 m/s", key="m1"): ganar_xp(10)
-        if st.button("100 m/s", key="m2"): st.error("Incorrect")
+        if st.button("Valider: 100m en 10s = 10m/s"): ganar_xp(10)
         
     with st.expander("📚 Français"):
-        st.markdown("<div id='game-question'>Synonyme de Gagner :</div>", unsafe_allow_html=True)
-        if st.button("Remporter", key="r1"): ganar_xp(10)
-        if st.button("Échouer", key="r2"): st.error("Incorrect")
+        if st.button("Valider: Synonyme de Gagner = Remporter"): ganar_xp(10)
 
 # --- EL GRIMORIO (DIARIO) ---
 elif st.session_state['page'] == 'journal':
-    st.markdown("<h1>Le Grimoire (Journal)</h1>", unsafe_allow_html=True)
+    st.markdown("<div class='hero-header'><h1>Le Grimoire</h1></div>", unsafe_allow_html=True)
     st.markdown("<div class='solid-panel'>", unsafe_allow_html=True)
     st.write("Écrivez vos apprentissages du jour en français.")
     
@@ -344,7 +341,7 @@ elif st.session_state['page'] == 'journal':
     
     mis_entradas = df_journal[df_journal['Propietario'] == st.session_state['current_user']]
     for i, row in mis_entradas.iterrows():
-        st.markdown(f"<div class='solid-panel' style='padding:15px;'><small style='color:#8B0000;'>{row['Date']}</small><br><i>{row['Reflexion']}</i></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='solid-panel' style='padding:15px;'><small style='color:#0066CC;'>{row['Date']}</small><br><i>{row['Reflexion']}</i></div>", unsafe_allow_html=True)
 
 # ==========================================
 # MENU INFERIOR
