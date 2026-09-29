@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
+import base64
 from datetime import datetime
 
 # --- 1. CONFIGURACIÓN ---
@@ -10,6 +11,21 @@ st.set_page_config(
     layout="centered",
     initial_sidebar_state="collapsed" 
 )
+
+# --- FUNCIÓN PARA LEER TUS IMÁGENES LOCALES (.PNG) ---
+def get_local_img(path):
+    """Busca tus archivos .png y los codifica para la web."""
+    if os.path.exists(path):
+        with open(path, "rb") as f:
+            ext = path.split('.')[-1]
+            return f"data:image/{ext};base64,{base64.b64encode(f.read()).decode()}"
+    # Huevo genérico por si falla la ruta
+    return "https://cdn-icons-png.flaticon.com/512/528/528098.png"
+
+# Conectamos las imágenes asegurando la extensión .png
+egg_feu_b64 = get_local_img("huevo_fuego.png")
+egg_eau_b64 = get_local_img("huevo_agua.png")
+egg_plante_b64 = get_local_img("huevo_planta.png")
 
 # --- 2. CSS "FANTASÍA MEDIEVAL" ---
 st.markdown("""
@@ -58,13 +74,8 @@ st.markdown("""
         box-shadow: 0 10px 20px rgba(0,0,0,0.7);
     }
     .hero-header h1 { 
-        font-family: 'Cinzel', serif; 
-        font-weight: 900; 
-        font-size: 2.8rem;
-        text-transform: uppercase;
-        letter-spacing: 3px;
-        text-shadow: 2px 2px 5px #000;
-        margin-bottom: 5px;
+        font-family: 'Cinzel', serif; font-weight: 900; font-size: 2.8rem;
+        text-transform: uppercase; letter-spacing: 3px; text-shadow: 2px 2px 5px #000; margin-bottom: 5px;
     }
 
     h1, h2, h3, h4 { color: var(--primary) !important; font-family: 'Cinzel', serif; font-weight: 900 !important; }
@@ -72,17 +83,9 @@ st.markdown("""
 
     .stButton > button {
         background: linear-gradient(to bottom, #8B0000, #4a0000);
-        color: var(--accent);
-        border-radius: 5px;
-        border: 2px solid var(--accent);
-        padding: 12px;
-        font-family: 'Cinzel', serif;
-        font-weight: 700;
-        font-size: 1.1rem;
-        text-transform: uppercase;
-        width: 100%;
-        transition: all 0.2s;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.5);
+        color: var(--accent); border-radius: 5px; border: 2px solid var(--accent);
+        padding: 12px; font-family: 'Cinzel', serif; font-weight: 700; font-size: 1.1rem;
+        text-transform: uppercase; width: 100%; transition: all 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.5);
     }
     
     .stButton > button:hover { background: linear-gradient(to bottom, #a30000, #5c0000); transform: translateY(-2px); }
@@ -90,45 +93,64 @@ st.markdown("""
 
     .dragon-emoji { font-size: 8rem; text-align: center; display: block; margin: 20px 0; animation: float 3s infinite ease-in-out; }
     
-    /* --- FORMA DE HUEVO MÁGICO CON TEXTURAS REALES --- */
+    /* --- HUEVOS 2D GAMING --- */
     .dragon-egg {
-        width: 150px;
-        height: 200px;
+        width: 220px;
+        height: 250px;
         margin: 20px auto;
-        /* La fórmula matemática en CSS para hacer forma de huevo */
-        border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-        background-size: cover;
+        background-size: contain;
+        background-repeat: no-repeat;
         background-position: center;
-        border: 4px solid var(--accent);
         animation: float 3s infinite ease-in-out;
-    }
-    
-    /* Huevo de Fuego (Lava pura) */
-    .egg-feu { 
-        background-image: url('https://encrypted-tbn0.gstatic.com/licensed-image?q=tbn:ANd9GcRI_XXEwdegy5afN1p63cMkP3xwJp0_jHzbAPVw6eyhhpNboPuVOA_cQ4EdkYJZxjzKzMBUWVHpqf2ma2Q'); 
-        box-shadow: inset -15px -15px 30px rgba(0,0,0,0.8), 0 0 40px #ff4500; 
-    }
-    /* Huevo de Agua (Cristal Azul) */
-    .egg-eau { 
-        background-image: url('https://encrypted-tbn1.gstatic.com/licensed-image?q=tbn:ANd9GcSZO_rjUjg-1JO6guWA6moeLQWPn4B1C8FvLgjQe2T3OAoAHqIAFfcPuvYLCuf5nAp86z_oTDa1AB8SOLk'); 
-        box-shadow: inset -15px -15px 30px rgba(0,0,0,0.8), 0 0 40px #00bfff; 
-    }
-    /* Huevo de Planta (Raíces Entrelazadas) */
-    .egg-plante { 
-        background-image: url('https://encrypted-tbn3.gstatic.com/licensed-image?q=tbn:ANd9GcT4lFynFf2Z0rBBqh4jEyDZQ174Cxl9ZzYjGLRmJ3Web22xGuJFNivHl79D5ZPL8GOASIKtsHaogMfkeKA'); 
-        box-shadow: inset -15px -15px 30px rgba(0,0,0,0.8), 0 0 40px #32cd32; 
+        mix-blend-mode: normal; /* Al ser PNG sin fondo, no hace falta multiply */
     }
 
     @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
     
+    /* --- MEJORAS DE LECTURA EN LAS PREGUNTAS (ARCADE) --- */
+    #game-question {
+        font-size: 1.8rem !important;
+        color: #1a1a1a !important;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 20px;
+        border-radius: 10px;
+        border: 2px solid var(--primary);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    .game-opt {
+        background: #ffffff !important;
+        color: #000000 !important;
+        font-size: 1.3rem;
+        padding: 18px;
+        margin-bottom: 15px;
+        border-radius: 8px;
+        border: 2px solid #8B0000;
+        cursor: pointer;
+        text-align: center;
+        font-weight: 900;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        transition: transform 0.1s, background 0.2s;
+    }
+    .game-opt:hover {
+        background: #fdf5e6 !important;
+        transform: scale(1.02);
+    }
+
     .xp-container { background: #1a1a1a; border-radius: 10px; height: 25px; position: relative; border: 2px solid var(--accent); margin-top: 15px;}
     .xp-fill { background: linear-gradient(90deg, #4b0082, #8a2be2, #00ffff); height: 100%; width: 0%; transition: width 0.8s; border-radius: 8px;}
     .xp-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: sans-serif; font-weight: bold; font-size: 0.8rem; color: white;}
 
     #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
-    
-    /* MENÚ NATIVO STREAMLIT (FANTASÍA) */
     div[data-testid="column"] { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+</style>
+""", unsafe_allow_html=True)
+
+# Inyectamos tus imágenes base64 .png
+st.markdown(f"""
+<style>
+    .egg-feu {{ background-image: url('{egg_feu_b64}'); }}
+    .egg-eau {{ background-image: url('{egg_eau_b64}'); }}
+    .egg-plante {{ background-image: url('{egg_plante_b64}'); }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -149,12 +171,12 @@ init_db()
 df_dragones = load_data(FILE_DRAGONS)
 df_journal = load_data(FILE_JOURNAL)
 
-# --- 4. LÓGICA DE EVOLUCIÓN (HUEVOS PERSONALIZADOS CON HTML) ---
+# --- 4. LÓGICA DE EVOLUCIÓN ---
 def get_dragon_visual(xp, elemento):
     if xp < 100:
-        if "Feu" in elemento: return "<div class='dragon-egg egg-feu'></div>", "L'Œuf de Lave"
-        elif "Eau" in elemento: return "<div class='dragon-egg egg-eau'></div>", "L'Œuf des Courants"
-        else: return "<div class='dragon-egg egg-plante'></div>", "L'Œuf des Racines"
+        if "Feu" in elemento: return "<div class='dragon-egg egg-feu'></div>", "L'Œuf de Magma"
+        elif "Eau" in elemento: return "<div class='dragon-egg egg-eau'></div>", "L'Œuf Océanique"
+        else: return "<div class='dragon-egg egg-plante'></div>", "L'Œuf Sylvestre"
     elif xp < 300: return "<div class='dragon-emoji'>🦎</div>", "Bébé Dragon"
     elif xp < 600: return "<div class='dragon-emoji'>🦖</div>", "Jeune Dragon"
     elif xp < 1000: return "<div class='dragon-emoji'>🐲</div>", "Dragon Adulte"
@@ -227,7 +249,6 @@ elif st.session_state['page'] == 'home':
     st.markdown(f"<h2 style='text-align:center; color:#2c1e16;'>{mi_dragon['NombreDragon']}</h2>", unsafe_allow_html=True)
     st.markdown(f"<p style='text-align:center;'><strong>Élément:</strong> {mi_dragon['Elemento']}</p>", unsafe_allow_html=True)
     
-    # Renderizamos la imagen HTML directamente para que se vea el Huevo mágico CSS
     st.markdown(f"{emoji}", unsafe_allow_html=True)
     
     st.markdown(f"<h3 style='text-align:center;'>Stade: {nombre_fase}</h3>", unsafe_allow_html=True)
@@ -245,45 +266,63 @@ elif st.session_state['page'] == 'home':
 elif st.session_state['page'] == 'missions':
     st.markdown("<h1>La Guilde (Missions)</h1>", unsafe_allow_html=True)
     
-    # 1. Códigos Secretos
     with st.expander("🗝️ Code Secret du Maître", expanded=False):
         codigo = st.text_input("Code:").upper()
         if st.button("Valider la Quête Secrète"):
             if codigo == "DRAGON": ganar_xp(100)
             else: st.error("Code invalide.")
             
-    # 2. Las 10 Misiones Arcade
     st.markdown("### ⚔️ Entraînement Quotidien")
     
     with st.expander("🔢 123 Les Nombres"):
-        if st.button("Valider: 10 stylos = 20€. 1 stylo = 2€"): ganar_xp(10)
+        st.markdown("<div id='game-question'>10 stylos = 20€. 1 stylo = ?</div>", unsafe_allow_html=True)
+        if st.button("2€", key="n1"): ganar_xp(10)
+        if st.button("5€", key="n2"): st.error("Incorrect")
     
     with st.expander("🚀 Futur Simple"):
-        if st.button("Valider: Demain je mangerai"): ganar_xp(10)
+        st.markdown("<div id='game-question'>Demain je ___ (manger)</div>", unsafe_allow_html=True)
+        if st.button("mangerai", key="f1"): ganar_xp(10)
+        if st.button("mange", key="f2"): st.error("Incorrect")
         
     with st.expander("🍕 Partitifs"):
-        if st.button("Valider: Je veux de l'eau"): ganar_xp(10)
+        st.markdown("<div id='game-question'>Je veux ___ eau</div>", unsafe_allow_html=True)
+        if st.button("de l'", key="p1"): ganar_xp(10)
+        if st.button("du", key="p2"): st.error("Incorrect")
         
     with st.expander("🏃 Sport"):
-        if st.button("Valider: Le sport dans l'eau c'est la natation"): ganar_xp(10)
+        st.markdown("<div id='game-question'>Le sport dans l'eau ?</div>", unsafe_allow_html=True)
+        if st.button("Natation", key="s1"): ganar_xp(10)
+        if st.button("Tennis", key="s2"): st.error("Incorrect")
         
     with st.expander("📣 Impératif"):
-        if st.button("Valider: (Courir) Cours vite !"): ganar_xp(10)
+        st.markdown("<div id='game-question'>(Courir) ___ vite !</div>", unsafe_allow_html=True)
+        if st.button("Cours", key="i1"): ganar_xp(10)
+        if st.button("Courir", key="i2"): st.error("Incorrect")
         
     with st.expander("🌍 Quiz ODD"):
-        if st.button("Valider: ODD 13 = Le Climat"): ganar_xp(10)
+        st.markdown("<div id='game-question'>L'ODD 13 concerne...</div>", unsafe_allow_html=True)
+        if st.button("Le Climat", key="o1"): ganar_xp(10)
+        if st.button("L'Eau", key="o2"): st.error("Incorrect")
         
     with st.expander("🌿 SVT (ODD)"):
-        if st.button("Valider: Bouteille plastique = Poubelle Jaune"): ganar_xp(10)
+        st.markdown("<div id='game-question'>Où jeter une bouteille plastique ?</div>", unsafe_allow_html=True)
+        if st.button("Poubelle Jaune", key="v1"): ganar_xp(10)
+        if st.button("Poubelle Bleue", key="v2"): st.error("Incorrect")
         
     with st.expander("🗺️ Géo & Hist"):
-        if st.button("Valider: Les JO sont nés en Grèce"): ganar_xp(10)
+        st.markdown("<div id='game-question'>Où sont nés les JO ?</div>", unsafe_allow_html=True)
+        if st.button("En Grèce", key="g1"): ganar_xp(10)
+        if st.button("En Italie", key="g2"): st.error("Incorrect")
         
     with st.expander("📐 Maths"):
-        if st.button("Valider: 100m en 10s = 10m/s"): ganar_xp(10)
+        st.markdown("<div id='game-question'>100m en 10s. Vitesse ?</div>", unsafe_allow_html=True)
+        if st.button("10 m/s", key="m1"): ganar_xp(10)
+        if st.button("100 m/s", key="m2"): st.error("Incorrect")
         
     with st.expander("📚 Français"):
-        if st.button("Valider: Synonyme de Gagner = Remporter"): ganar_xp(10)
+        st.markdown("<div id='game-question'>Synonyme de Gagner :</div>", unsafe_allow_html=True)
+        if st.button("Remporter", key="r1"): ganar_xp(10)
+        if st.button("Échouer", key="r2"): st.error("Incorrect")
 
 # --- EL GRIMORIO (DIARIO) ---
 elif st.session_state['page'] == 'journal':
@@ -296,7 +335,6 @@ elif st.session_state['page'] == 'journal':
         if st.form_submit_button("Écrire dans le Grimoire (+10 XP)"):
             if reflexion:
                 new_entry = pd.DataFrame([[st.session_state['current_user'], datetime.now().strftime("%d/%m %H:%M"), reflexion]], columns=['Propietario', 'Date', 'Reflexion'])
-                
                 df_journal = pd.concat([new_entry, df_journal], ignore_index=True)
                 save_data(df_journal, FILE_JOURNAL)
                 ganar_xp(10)
@@ -304,19 +342,17 @@ elif st.session_state['page'] == 'journal':
                 st.error("Le parchemin est vide.")
     st.markdown("</div>", unsafe_allow_html=True)
     
-    # Mostrar el historial del grimorio
     mis_entradas = df_journal[df_journal['Propietario'] == st.session_state['current_user']]
     for i, row in mis_entradas.iterrows():
         st.markdown(f"<div class='solid-panel' style='padding:15px;'><small style='color:#8B0000;'>{row['Date']}</small><br><i>{row['Reflexion']}</i></div>", unsafe_allow_html=True)
 
 # ==========================================
-# MENU INFERIOR NATIVO DE STREAMLIT
+# MENU INFERIOR
 # ==========================================
 if st.session_state['current_user'] and st.session_state['page'] != 'incubator':
     st.write("<br><br>", unsafe_allow_html=True)
     st.markdown("---")
     
-    # Barra de botones pura en Python (evita "dos menús" de iframes HTML)
     c1, c2, c3, c4 = st.columns(4)
     with c1:
         if st.button("🐉\nGuarida"): nav('home')
