@@ -336,12 +336,12 @@ elif st.session_state['page'] == 'home':
     """, unsafe_allow_html=True)
     st.markdown("</div>", unsafe_allow_html=True)
 
-# --- EL GREMIO (CON AUDIO / DUA Y BLOQUEO DE ÚNICO INTENTO, 20 XP) ---
+# --- EL GREMIO (CON FEEDBACK EDUCATIVO, EXPLICACIÓN Y 20 XP) ---
 elif st.session_state['page'] == 'missions':
     st.markdown("<div class='hero-header'><h1>La Guilde</h1></div>", unsafe_allow_html=True)
     
     if st.button(t['listen_inst']):
-        speak_text("Choisissez une mission d'entraînement, répondez correctement une seule fois pour gagner de l'expérience.")
+        speak_text("Choisissez une mission d'entraînement, lisez attentivement et répondez. En cas d'erreur, une explication vous guidera.")
 
     with st.expander(f"🗝️ {t['secret_title']}", expanded=False):
         codigo = st.text_input("Code:", key="secret_code_input").upper()
@@ -357,22 +357,73 @@ elif st.session_state['page'] == 'missions':
             else:
                 st.error("Code invalide.")
 
-    st.markdown(f"### ⚔️ {t['training']}")
+    st.markdown(f"### ⚔️️ {t['training']}")
 
+    # Cada misión incluye ahora su texto explicativo o pista pedagógica en caso de fallo
     misiones_arcade = [
-        ("m_num", "🔢 123 Les Nombres", "10 stylos = 20€. 1 stylo = ?", ["1€", "2€", "5€", "10€"], 1, 20),
-        ("m_fut", "🚀 Futur Simple", "Demain je ___ (manger)", ["mange", "mangerai", "mangerais", "mangeais"], 1, 20),
-        ("m_part", "🍕 Partitifs", "Je veux ___ eau", ["du", "de la", "de l'", "des"], 2, 20),
-        ("m_sport", "🏃 Sport", "Le sport dans l'eau c'est...", ["Le tennis", "Le judo", "La natation", "Le football"], 2, 20),
-        ("m_imp", "📣 Impératif", "(Courir) ___ vite !", ["Cours", "Courir", "Courez", "Coures"], 0, 20),
-        ("m_odd", "🌍 Quiz ODD", "L'ODD 13 concerne...", ["La pauvreté", "Le climat", "L'éducation", "La faim"], 1, 20),
-        ("m_svt", "🌿 SVT (ODD)", "Où jeter une bouteille plastique ?", ["Poubelle verte", "Poubelle bleue", "Poubelle jaune", "Compost"], 2, 20),
-        ("m_geo", "🗺️ Géo & Hist", "Où sont nés les Jeux Olympiques ?", ["En Italie", "En France", "En Grèce", "En Espagne"], 2, 20),
-        ("m_math", "📐 Maths", "100m parcourus en 10s. Quelle est la vitesse ?", ["10 m/s", "100 m/s", "1 m/s", "10 km/h"], 0, 20),
-        ("m_fra", "📚 Français", "Synonyme de 'Gagner' :", ["Perdre", "Échouer", "Remporter", "Finir"], 2, 20)
+        (
+            "m_num", "🔢 123 Les Nombres", 
+            "10 stylos = 20€. 1 stylo = ?", 
+            ["1€", "2€", "5€", "10€"], 1, 20,
+            "💡 Explication : Pour trouver le prix d'un stylo, il faut diviser le prix total par le nombre d'objets (20 ÷ 10 = 2)."
+        ),
+        (
+            "m_fut", "🚀 Futur Simple", 
+            "Demain je ___ (manger)", 
+            ["mange", "mangerai", "mangerais", "mangeais"], 1, 20,
+            "💡 Explication : Avec 'Demain', on utilise le futur simple. Le verbe manger à la 1ère personne prend la terminaison -ai (mangerai)."
+        ),
+        (
+            "m_part", "🍕 Partitifs", 
+            "Je veux ___ eau", 
+            ["du", "de la", "de l'", "des"], 2, 20,
+            "💡 Explication : 'Eau' est un nom féminin commençant par une voyelle. On utilise l'article partitif élidé 'de l''."
+        ),
+        (
+            "m_sport", "🏃 Sport", 
+            "Le sport dans l'eau c'est...", 
+            ["Le tennis", "Le judo", "La natation", "Le football"], 2, 20,
+            "💡 Explication : La natation est l'activité sportive qui se pratique en milieu aquatique."
+        ),
+        (
+            "m_imp", "📣 Impératif", 
+            "(Courir) ___ vite !", 
+            ["Cours", "Courir", "Courez", "Coures"], 0, 20,
+            "💡 Explication : À l'impératif présent, le verbe courir à la 2e personne du singulier (tu) s'écrit 'Cours' (sans 's' final pour les verbes en -er, mais avec un 's' pour courir)."
+        ),
+        (
+            "m_odd", "🌍 Quiz ODD", 
+            "L'ODD 13 concerne...", 
+            ["La pauvreté", "Le climat", "L'éducation", "La faim"], 1, 20,
+            "💡 Explication : L'Objectif de Développement Durable numéro 13 est 'Mesures relatives à la lutte contre les changements climatiques'."
+        ),
+        (
+            "m_svt", "🌿 SVT (ODD)", 
+            "Où jeter une bouteille plastique ?", 
+            ["Poubelle verte", "Poubelle bleue", "Poubelle jaune", "Compost"], 2, 20,
+            "💡 Explication : Les emballages en plastique se trient et se recyclent dans la poubelle jaune."
+        ),
+        (
+            "m_geo", "🗺️ Géo & Hist", 
+            "Où sont nés les Jeux Olympiques ?", 
+            ["En Italie", "En France", "En Grèce", "En Espagne"], 2, 20,
+            "💡 Explication : Les Jeux Olympiques antiques trouvent leur origine en Grèce (à Olympie)."
+        ),
+        (
+            "m_math", "📐 Maths", 
+            "100m parcourus en 10s. Quelle est la vitesse ?", 
+            ["10 m/s", "100 m/s", "1 m/s", "10 km/h"], 0, 20,
+            "💡 Explication : La vitesse se calcule en divisant la distance par le temps (100m ÷ 10s = 10 m/s)."
+        ),
+        (
+            "m_fra", "📚 Français", 
+            "Synonyme de 'Gagner' :", 
+            ["Perdre", "Échouer", "Remporter", "Finir"], 2, 20,
+            "💡 Explication : 'Remporter' (une victoire, un prix) est un synonyme direct de gagner."
+        )
     ]
 
-    for m_id, titulo, pregunta, opciones, correcta, xp_val in misiones_arcade:
+    for m_id, titulo, pregunta, opciones, correcta, xp_val, explicacion in misiones_arcade:
         with st.expander(titulo):
             col_q1, col_q2 = st.columns([5, 1])
             with col_q1:
@@ -381,24 +432,26 @@ elif st.session_state['page'] == 'missions':
                 if st.button("🔊", key=f"speak_{m_id}"):
                     speak_text(pregunta)
 
+            # Comprobar si el alumno ya intentó esta misión
             if m_id in st.session_state['answered_missions']:
-                st.info("✅ Mission déjà accomplie !")
+                st.info("✅ Mission déjà évaluée !")
             else:
                 selected_option = st.radio("Options :", opciones, key=f"radio_{m_id}", index=None)
                 if st.button("Valider la réponse", key=f"btn_{m_id}"):
                     if selected_option is not None:
                         opcion_elegida_idx = opciones.index(selected_option)
                         st.session_state['answered_missions'].append(m_id)
+                        
                         if opcion_elegida_idx == correcta:
                             ganar_xp(xp_val)
                             st.success(f"¡Correcto! +{xp_val} XP 🌟")
                             st.balloons()
                         else:
-                            st.error("Incorrect. Dommage !")
+                            st.error(f"❌ Incorrect. La bonne réponse était : **{opciones[correcta]}**")
+                            st.info(explicacion) # Muestra la explicación detallada para comprender el fallo
                         st.rerun()
                     else:
                         st.warning("Sélectionne une option avant de valider.")
-
 # --- EL GRIMORIO ---
 elif st.session_state['page'] == 'journal':
     st.markdown("<div class='hero-header'><h1>Le Grimoire</h1></div>", unsafe_allow_html=True)
